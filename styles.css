@@ -618,8 +618,9 @@ textarea:focus {
     flex-direction: column;
   }
 
-  .workspace,
-  .active-view {
+  .workspace.active-view,
+  .kitchen-view.active-view,
+  .admin-view.active-view {
     display: block;
   }
 
