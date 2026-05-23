@@ -363,6 +363,9 @@ function toggleDeliveryFields() {
   const isDelivery = getOrderType() === "entrega";
   $("#deliveryFields").classList.toggle("visible", isDelivery);
   $("#tableField").style.display = isDelivery ? "none" : "grid";
+  $("#generalNote").placeholder = isDelivery
+    ? "Ex: entregar troco para R$ 100, interfone, referencia"
+    : "Ex: sem cebola, ponto da carne, talheres extras";
 }
 
 function showView(viewName) {
