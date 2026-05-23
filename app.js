@@ -121,12 +121,43 @@ function renderMenu() {
     card.querySelector("h3").textContent = item.name;
     card.querySelector(".description").textContent = item.description;
     card.querySelector(".price").textContent = currency.format(item.price);
-    card.querySelector(".add-button").addEventListener("click", () => addToCart(item.id));
+    card.querySelector(".add-button").addEventListener("click", (event) => addToCart(item.id, event.currentTarget));
     menuGrid.appendChild(card);
   });
 }
 
-function addToCart(itemId) {
+function showToast(message) {
+  const toast = $("#toast");
+  toast.innerHTML = `
+    <span>${message}</span>
+    <button type="button" data-scroll-cart>Ver carrinho</button>
+  `;
+  toast.classList.add("visible");
+  clearTimeout(showToast.timeoutId);
+  showToast.timeoutId = setTimeout(() => {
+    toast.classList.remove("visible");
+  }, 2800);
+}
+
+function confirmAddButton(button) {
+  if (!button) return;
+  const originalText = button.textContent;
+  button.textContent = "Adicionado";
+  button.classList.add("added");
+  button.disabled = true;
+
+  setTimeout(() => {
+    button.textContent = originalText;
+    button.classList.remove("added");
+    button.disabled = false;
+  }, 900);
+}
+
+function scrollToCart() {
+  $(".cart-panel").scrollIntoView({ behavior: "smooth", block: "start" });
+}
+
+function addToCart(itemId, button) {
   const existing = state.cart.find((item) => item.id === itemId);
   if (existing) {
     existing.quantity += 1;
@@ -135,6 +166,9 @@ function addToCart(itemId) {
     state.cart.push({ ...item, quantity: 1, note: "" });
   }
   renderCart();
+  confirmAddButton(button);
+  const item = state.menuItems.find((menuItem) => menuItem.id === itemId);
+  showToast(`${item.name} foi adicionado ao carrinho.`);
 }
 
 function changeQuantity(itemId, amount) {
@@ -546,6 +580,12 @@ function bindEvents() {
     if (event.target.matches("[data-note]")) {
       updateItemNote(event.target.dataset.note, event.target.value);
     }
+  });
+
+  $("#toast").addEventListener("click", (event) => {
+    if (!event.target.closest("[data-scroll-cart]")) return;
+    $("#toast").classList.remove("visible");
+    scrollToCart();
   });
 
   $$("input[name='orderType']").forEach((input) => input.addEventListener("change", toggleDeliveryFields));
