@@ -329,12 +329,41 @@ textarea:focus {
   padding-bottom: 12px;
 }
 
-.cart-line-top,
 .qty-controls {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 10px;
+}
+
+.cart-line-top {
+  display: grid;
+  grid-template-columns: 64px minmax(0, 1fr);
+  align-items: center;
+  gap: 12px;
+}
+
+.cart-thumb {
+  width: 64px;
+  aspect-ratio: 1;
+  border-radius: 8px;
+  object-fit: cover;
+  border: 1px solid var(--line);
+}
+
+.cart-line-info {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+
+.cart-line-info strong {
+  overflow-wrap: anywhere;
+}
+
+.cart-line-info span {
+  color: var(--muted);
+  font-weight: 800;
 }
 
 .qty-controls button {

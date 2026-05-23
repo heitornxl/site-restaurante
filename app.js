@@ -164,8 +164,11 @@ function renderCart() {
       (item) => `
         <div class="cart-line">
           <div class="cart-line-top">
-            <strong>${item.name}</strong>
-            <span>${currency.format(item.price * item.quantity)}</span>
+            <img class="cart-thumb" src="${item.image}" alt="${item.name}" />
+            <div class="cart-line-info">
+              <strong>${item.name}</strong>
+              <span>${currency.format(item.price * item.quantity)}</span>
+            </div>
           </div>
           <div class="qty-controls">
             <button data-action="dec" data-id="${item.id}" aria-label="Diminuir ${item.name}">-</button>
