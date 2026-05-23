@@ -5,7 +5,7 @@ const defaultMenuItems = [
     category: "Burgers",
     description: "Pao brioche, burger bovino, queijo, alface, tomate e molho da casa.",
     price: 29.9,
-    image: "https://source.unsplash.com/900x700/?classic-burger",
+    image: "https://loremflickr.com/900/700/classic,burger?lock=101",
   },
   {
     id: "x-bacon",
@@ -13,7 +13,7 @@ const defaultMenuItems = [
     category: "Burgers",
     description: "Burger bovino, queijo cheddar, bacon crocante e maionese temperada.",
     price: 34.9,
-    image: "https://source.unsplash.com/900x700/?bacon-burger",
+    image: "https://loremflickr.com/900/700/bacon,burger?lock=102",
   },
   {
     id: "smash-duplo",
@@ -21,7 +21,7 @@ const defaultMenuItems = [
     category: "Burgers",
     description: "Dois smash burgers, queijo americano, picles e molho especial.",
     price: 38.9,
-    image: "https://source.unsplash.com/900x700/?smash-burger",
+    image: "https://loremflickr.com/900/700/smash,burger?lock=103",
   },
   {
     id: "burger-frango",
@@ -29,7 +29,7 @@ const defaultMenuItems = [
     category: "Burgers",
     description: "Frango crocante, queijo, salada fresca e molho levemente picante.",
     price: 32.9,
-    image: "https://source.unsplash.com/900x700/?chicken-burger",
+    image: "https://loremflickr.com/900/700/chicken,burger?lock=104",
   },
   {
     id: "burger-vegetariano",
@@ -37,7 +37,7 @@ const defaultMenuItems = [
     category: "Burgers",
     description: "Burger vegetal, queijo, folhas, tomate e molho de ervas.",
     price: 33.9,
-    image: "https://source.unsplash.com/900x700/?vegetarian-burger",
+    image: "https://loremflickr.com/900/700/vegetarian,burger?lock=105",
   },
   {
     id: "file-parmegiana",
@@ -45,7 +45,7 @@ const defaultMenuItems = [
     category: "Pratos prontos",
     description: "File empanado, molho de tomate, queijo gratinado, arroz e fritas.",
     price: 42.9,
-    image: "https://source.unsplash.com/900x700/?chicken-parmigiana",
+    image: "https://loremflickr.com/900/700/parmesan,chicken,food?lock=201",
   },
   {
     id: "strogonoff-frango",
@@ -53,7 +53,7 @@ const defaultMenuItems = [
     category: "Pratos prontos",
     description: "Frango cremoso, arroz branco e batata palha.",
     price: 31.9,
-    image: "https://source.unsplash.com/900x700/?chicken-stroganoff",
+    image: "https://loremflickr.com/900/700/stroganoff,food?lock=202",
   },
   {
     id: "risoto-camarao",
@@ -61,7 +61,7 @@ const defaultMenuItems = [
     category: "Pratos prontos",
     description: "Arroz arboreo cremoso, camarao salteado, ervas e toque de limao.",
     price: 54.9,
-    image: "https://source.unsplash.com/900x700/?shrimp-risotto",
+    image: "https://loremflickr.com/900/700/shrimp,risotto?lock=203",
   },
   {
     id: "lasanha-bolonhesa",
@@ -69,7 +69,7 @@ const defaultMenuItems = [
     category: "Pratos prontos",
     description: "Massa fresca, molho bolonhesa, queijo e gratinado ao forno.",
     price: 37.9,
-    image: "https://source.unsplash.com/900x700/?lasagna",
+    image: "https://loremflickr.com/900/700/lasagna?lock=204",
   },
   {
     id: "peixe-grelhado",
@@ -77,7 +77,7 @@ const defaultMenuItems = [
     category: "Pratos prontos",
     description: "File de peixe grelhado, legumes, arroz e molho de limao.",
     price: 44.9,
-    image: "https://source.unsplash.com/900x700/?grilled-fish",
+    image: "https://loremflickr.com/900/700/grilled,fish,food?lock=205",
   },
   {
     id: "coca-cola",
@@ -85,7 +85,7 @@ const defaultMenuItems = [
     category: "Refrigerantes",
     description: "Refrigerante Coca-Cola lata 350ml.",
     price: 7.5,
-    image: "https://source.unsplash.com/900x700/?cola-can",
+    image: "https://loremflickr.com/900/700/cola,can?lock=301",
   },
   {
     id: "guarana",
@@ -93,7 +93,7 @@ const defaultMenuItems = [
     category: "Refrigerantes",
     description: "Refrigerante de guarana lata 350ml.",
     price: 7.5,
-    image: "https://source.unsplash.com/900x700/?soda-can",
+    image: "https://loremflickr.com/900/700/soda,can?lock=302",
   },
   {
     id: "sprite",
@@ -101,7 +101,7 @@ const defaultMenuItems = [
     category: "Refrigerantes",
     description: "Refrigerante de limao lata 350ml.",
     price: 7.5,
-    image: "https://source.unsplash.com/900x700/?lemon-soda",
+    image: "https://loremflickr.com/900/700/lemon,soda?lock=303",
   },
   {
     id: "fanta-laranja",
@@ -109,7 +109,7 @@ const defaultMenuItems = [
     category: "Refrigerantes",
     description: "Refrigerante sabor laranja lata 350ml.",
     price: 7.5,
-    image: "https://source.unsplash.com/900x700/?orange-soda",
+    image: "https://loremflickr.com/900/700/orange,soda?lock=304",
   },
   {
     id: "agua-com-gas",
@@ -117,7 +117,7 @@ const defaultMenuItems = [
     category: "Refrigerantes",
     description: "Agua mineral com gas 500ml.",
     price: 5.5,
-    image: "https://source.unsplash.com/900x700/?sparkling-water",
+    image: "https://loremflickr.com/900/700/sparkling,water?lock=305",
   },
   {
     id: "suco-laranja",
@@ -125,7 +125,7 @@ const defaultMenuItems = [
     category: "Sucos naturais",
     description: "Suco natural de laranja feito na hora.",
     price: 11.9,
-    image: "https://source.unsplash.com/900x700/?orange-juice",
+    image: "https://loremflickr.com/900/700/orange,juice?lock=401",
   },
   {
     id: "suco-morango",
@@ -133,7 +133,7 @@ const defaultMenuItems = [
     category: "Sucos naturais",
     description: "Morango batido com agua ou leite.",
     price: 13.9,
-    image: "https://source.unsplash.com/900x700/?strawberry-juice",
+    image: "https://loremflickr.com/900/700/strawberry,juice?lock=402",
   },
   {
     id: "suco-abacaxi-hortela",
@@ -141,7 +141,7 @@ const defaultMenuItems = [
     category: "Sucos naturais",
     description: "Suco natural de abacaxi com hortela fresca.",
     price: 12.9,
-    image: "https://source.unsplash.com/900x700/?pineapple-mint-juice",
+    image: "https://loremflickr.com/900/700/pineapple,juice?lock=403",
   },
   {
     id: "suco-maracuja",
@@ -149,7 +149,7 @@ const defaultMenuItems = [
     category: "Sucos naturais",
     description: "Suco natural de maracuja, refrescante e levemente azedinho.",
     price: 12.9,
-    image: "https://source.unsplash.com/900x700/?passion-fruit-juice",
+    image: "https://loremflickr.com/900/700/passionfruit,juice?lock=404",
   },
   {
     id: "suco-melancia",
@@ -157,7 +157,7 @@ const defaultMenuItems = [
     category: "Sucos naturais",
     description: "Melancia fresca batida com gelo.",
     price: 11.9,
-    image: "https://source.unsplash.com/900x700/?watermelon-juice",
+    image: "https://loremflickr.com/900/700/watermelon,juice?lock=405",
   },
   {
     id: "caipirinha-limao",
@@ -165,7 +165,7 @@ const defaultMenuItems = [
     category: "Drinks alcoolicos",
     description: "Cachaca, limao, acucar e gelo.",
     price: 18.9,
-    image: "https://source.unsplash.com/900x700/?caipirinha",
+    image: "https://loremflickr.com/900/700/caipirinha,cocktail?lock=501",
   },
   {
     id: "mojito",
@@ -173,7 +173,7 @@ const defaultMenuItems = [
     category: "Drinks alcoolicos",
     description: "Rum, hortela, limao, acucar, gelo e agua com gas.",
     price: 22.9,
-    image: "https://source.unsplash.com/900x700/?mojito",
+    image: "https://loremflickr.com/900/700/mojito,cocktail?lock=502",
   },
   {
     id: "gin-tonica",
@@ -181,7 +181,7 @@ const defaultMenuItems = [
     category: "Drinks alcoolicos",
     description: "Gin, tonica, gelo e especiarias aromaticas.",
     price: 24.9,
-    image: "https://source.unsplash.com/900x700/?gin-tonic",
+    image: "https://loremflickr.com/900/700/gin,tonic,cocktail?lock=503",
   },
   {
     id: "aperol-spritz",
@@ -189,7 +189,7 @@ const defaultMenuItems = [
     category: "Drinks alcoolicos",
     description: "Aperol, espumante, agua com gas e laranja.",
     price: 25.9,
-    image: "https://source.unsplash.com/900x700/?aperol-spritz",
+    image: "https://loremflickr.com/900/700/aperol,spritz?lock=504",
   },
   {
     id: "margarita",
@@ -197,7 +197,7 @@ const defaultMenuItems = [
     category: "Drinks alcoolicos",
     description: "Tequila, licor de laranja, limao e borda de sal.",
     price: 26.9,
-    image: "https://source.unsplash.com/900x700/?margarita-cocktail",
+    image: "https://loremflickr.com/900/700/margarita,cocktail?lock=505",
   },
   {
     id: "pudim-classico",
@@ -205,7 +205,7 @@ const defaultMenuItems = [
     category: "Sobremesas",
     description: "Pudim de leite condensado com calda de caramelo.",
     price: 14.9,
-    image: "https://source.unsplash.com/900x700/?flan-dessert",
+    image: "https://loremflickr.com/900/700/flan,dessert?lock=601",
   },
   {
     id: "brownie-sorvete",
@@ -213,7 +213,7 @@ const defaultMenuItems = [
     category: "Sobremesas",
     description: "Brownie quente, sorvete de creme e calda de chocolate.",
     price: 19.9,
-    image: "https://source.unsplash.com/900x700/?brownie-ice-cream",
+    image: "https://loremflickr.com/900/700/brownie,icecream?lock=602",
   },
   {
     id: "cheesecake-frutas",
@@ -221,7 +221,7 @@ const defaultMenuItems = [
     category: "Sobremesas",
     description: "Cheesecake cremoso com calda de frutas vermelhas.",
     price: 21.9,
-    image: "https://source.unsplash.com/900x700/?berry-cheesecake",
+    image: "https://loremflickr.com/900/700/cheesecake,berries?lock=603",
   },
   {
     id: "petit-gateau",
@@ -229,7 +229,7 @@ const defaultMenuItems = [
     category: "Sobremesas",
     description: "Bolinho de chocolate com centro cremoso e sorvete.",
     price: 24.9,
-    image: "https://source.unsplash.com/900x700/?chocolate-lava-cake",
+    image: "https://loremflickr.com/900/700/chocolate,cake,dessert?lock=604",
   },
   {
     id: "mousse-maracuja",
@@ -237,7 +237,7 @@ const defaultMenuItems = [
     category: "Sobremesas",
     description: "Mousse leve de maracuja com calda da fruta.",
     price: 16.9,
-    image: "https://source.unsplash.com/900x700/?passion-fruit-dessert",
+    image: "https://loremflickr.com/900/700/passionfruit,dessert?lock=605",
   },
 ];
 
@@ -389,6 +389,9 @@ function renderMenu() {
     const card = template.content.firstElementChild.cloneNode(true);
     card.querySelector("img").src = item.image;
     card.querySelector("img").alt = item.name;
+    card.querySelector("img").addEventListener("error", (event) => {
+      event.currentTarget.src = "./imagens/burger.jpg";
+    }, { once: true });
     card.querySelector(".category-label").textContent = item.category;
     card.querySelector("h3").textContent = item.name;
     card.querySelector(".description").textContent = item.description;
@@ -1104,3 +1107,4 @@ async function initApp() {
 }
 
 initApp();
+
