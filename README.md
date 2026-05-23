@@ -25,3 +25,16 @@ Abra o arquivo `index.html` no navegador ou publique o projeto em uma hospedagem
 ## Observacao
 
 Esta versao salva dados no navegador usando `localStorage`. Para uso real em restaurante, o proximo passo e conectar um banco de dados e login seguro.
+
+## Configurar Supabase
+
+1. Crie um projeto no Supabase.
+2. Abra o editor SQL do Supabase.
+3. Cole e execute o conteudo do arquivo `supabase-schema.sql`.
+4. Em Authentication > Users, crie um usuario para o administrador do restaurante.
+5. Em Project Settings > API, copie:
+   - Project URL
+   - anon public key
+6. Cole esses valores no arquivo `supabase-config.js`.
+
+Quando `supabase-config.js` estiver preenchido, o site passa a usar o banco online para cardapio, pedidos e fila.

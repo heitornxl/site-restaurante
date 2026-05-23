@@ -73,6 +73,16 @@ const state = {
   isAdminLoggedIn: sessionStorage.getItem("restaurant-admin") === "true",
 };
 
+const supabaseConfig = window.SUPABASE_CONFIG || {};
+const database = {
+  enabled: Boolean(supabaseConfig.url && supabaseConfig.anonKey && window.supabase),
+  client: null,
+};
+
+if (database.enabled) {
+  database.client = window.supabase.createClient(supabaseConfig.url, supabaseConfig.anonKey);
+}
+
 if (!state.menuItems.length) {
   state.menuItems = [...defaultMenuItems];
 }
@@ -92,11 +102,97 @@ const adminItems = $("#adminItems");
 const adminOrders = $("#adminOrders");
 const channel = "BroadcastChannel" in window ? new BroadcastChannel("restaurant-orders") : null;
 
-function saveMenu() {
+function normalizeMenuItem(row) {
+  return {
+    id: row.id,
+    name: row.name,
+    category: row.category,
+    description: row.description,
+    price: Number(row.price),
+    image: row.image,
+  };
+}
+
+function normalizeOrder(row) {
+  return {
+    id: row.id,
+    type: row.type,
+    status: row.status,
+    createdAt: row.created_at,
+    table: row.table_number || "",
+    customer: {
+      name: row.customer_name || "",
+      phone: row.customer_phone || "",
+      address: row.customer_address || "",
+    },
+    note: row.note || "",
+    total: Number(row.total),
+    items: (row.order_items || []).map((item) => ({
+      id: item.menu_item_id,
+      name: item.name,
+      quantity: item.quantity,
+      note: item.note || "",
+      price: Number(item.price),
+    })),
+  };
+}
+
+async function loadMenuFromDatabase() {
+  if (!database.enabled) return;
+  const { data, error } = await database.client
+    .from("menu_items")
+    .select("*")
+    .eq("active", true)
+    .order("sort_order", { ascending: true })
+    .order("created_at", { ascending: true });
+
+  if (error) {
+    console.error(error);
+    showToast("Nao consegui carregar o cardapio online.");
+    return;
+  }
+
+  state.menuItems = data.map(normalizeMenuItem);
+}
+
+async function loadOrdersFromDatabase() {
+  if (!database.enabled) return;
+  const { data, error } = await database.client
+    .from("orders")
+    .select("*, order_items(*)")
+    .neq("status", "Finalizado")
+    .order("created_at", { ascending: true });
+
+  if (error) {
+    console.error(error);
+    showToast("Nao consegui carregar os pedidos online.");
+    return;
+  }
+
+  state.orders = data.map(normalizeOrder);
+}
+
+async function loadSessionFromDatabase() {
+  if (!database.enabled) return;
+  const { data } = await database.client.auth.getSession();
+  state.isAdminLoggedIn = Boolean(data.session);
+}
+
+async function saveMenu() {
+  if (database.enabled) {
+    await loadMenuFromDatabase();
+    return;
+  }
+
   localStorage.setItem("restaurant-menu", JSON.stringify(state.menuItems));
 }
 
-function saveOrders() {
+async function saveOrders() {
+  if (database.enabled) {
+    await loadOrdersFromDatabase();
+    return;
+  }
+
   localStorage.setItem("restaurant-orders", JSON.stringify(state.orders));
   channel?.postMessage({ type: "orders-updated", orders: state.orders });
 }
@@ -244,7 +340,7 @@ function validateOrder() {
   return "";
 }
 
-function sendOrder() {
+async function sendOrder() {
   const error = validateOrder();
   if (error) {
     alert(error);
@@ -274,12 +370,52 @@ function sendOrder() {
     })),
   };
 
-  state.orders.unshift(order);
+  if (database.enabled) {
+    const { error: orderError } = await database.client.from("orders").insert({
+      id: order.id,
+      type: order.type,
+      status: order.status,
+      table_number: order.table,
+      customer_name: order.customer.name,
+      customer_phone: order.customer.phone,
+      customer_address: order.customer.address,
+      note: order.note,
+      total: order.total,
+      created_at: order.createdAt,
+    });
+
+    if (orderError) {
+      console.error(orderError);
+      alert("Nao consegui enviar o pedido para o banco de dados.");
+      return;
+    }
+
+    const { error: itemsError } = await database.client.from("order_items").insert(
+      order.items.map((item) => ({
+        order_id: order.id,
+        menu_item_id: item.id,
+        name: item.name,
+        quantity: item.quantity,
+        note: item.note,
+        price: item.price,
+      }))
+    );
+
+    if (itemsError) {
+      console.error(itemsError);
+      alert("Pedido criado, mas houve erro ao salvar os itens.");
+      return;
+    }
+  } else {
+    state.orders.push(order);
+  }
+
   state.cart = [];
   $("#generalNote").value = "";
-  saveOrders();
+  await saveOrders();
   renderCart();
   renderKitchen();
+  renderAdminOrders();
   alert("Pedido enviado para a cozinha.");
 }
 
@@ -384,11 +520,20 @@ function renderAdminOrders() {
     .join("");
 }
 
-function updateOrderStatus(orderId) {
+async function updateOrderStatus(orderId) {
   const order = state.orders.find((item) => item.id === orderId);
   if (!order) return;
   order.status = order.status === "Novo" ? "Em preparo" : "Finalizado";
-  saveOrders();
+  if (database.enabled) {
+    const { error } = await database.client.from("orders").update({ status: order.status }).eq("id", orderId);
+    if (error) {
+      console.error(error);
+      alert("Nao consegui atualizar o status do pedido.");
+      return;
+    }
+  }
+
+  await saveOrders();
   renderKitchen();
   renderAdminOrders();
 }
@@ -435,9 +580,26 @@ function renderAdmin() {
     .join("");
 }
 
-function loginAdmin() {
+async function loginAdmin() {
   const user = $("#adminUser").value.trim();
   const password = $("#adminPassword").value.trim();
+
+  if (database.enabled) {
+    const { error } = await database.client.auth.signInWithPassword({
+      email: user,
+      password,
+    });
+
+    if (error) {
+      $("#loginMessage").textContent = "Email ou senha incorretos.";
+      return;
+    }
+
+    state.isAdminLoggedIn = true;
+    $("#loginMessage").textContent = "";
+    renderAdmin();
+    return;
+  }
 
   if (user === "admin" && password === "senha123") {
     state.isAdminLoggedIn = true;
@@ -450,7 +612,11 @@ function loginAdmin() {
   $("#loginMessage").textContent = "Usuario ou senha incorretos. Use admin / senha123 nesta versao de treino.";
 }
 
-function logoutAdmin() {
+async function logoutAdmin() {
+  if (database.enabled) {
+    await database.client.auth.signOut();
+  }
+
   state.isAdminLoggedIn = false;
   sessionStorage.removeItem("restaurant-admin");
   resetForm();
@@ -522,33 +688,84 @@ async function saveMenuItem(event) {
     state.menuItems.push(item);
   }
 
-  saveMenu();
+  if (database.enabled) {
+    const { error } = await database.client.from("menu_items").upsert({
+      id: item.id,
+      name: item.name,
+      category: item.category,
+      description: item.description,
+      price: item.price,
+      image: item.image,
+      active: true,
+      updated_at: new Date().toISOString(),
+    });
+
+    if (error) {
+      console.error(error);
+      alert("Nao consegui salvar o item no banco de dados.");
+      return;
+    }
+  }
+
+  await saveMenu();
   resetForm();
   renderCategories();
   renderMenu();
   renderAdmin();
 }
 
-function deleteMenuItem(itemId) {
+async function deleteMenuItem(itemId) {
   const item = state.menuItems.find((menuItem) => menuItem.id === itemId);
   if (!item) return;
   const confirmed = confirm(`Remover "${item.name}" do cardapio?`);
   if (!confirmed) return;
 
+  if (database.enabled) {
+    const { error } = await database.client.from("menu_items").update({ active: false }).eq("id", itemId);
+    if (error) {
+      console.error(error);
+      alert("Nao consegui remover o item do banco de dados.");
+      return;
+    }
+  }
+
   state.menuItems = state.menuItems.filter((menuItem) => menuItem.id !== itemId);
   state.cart = state.cart.filter((cartItem) => cartItem.id !== itemId);
-  saveMenu();
+  await saveMenu();
   renderCategories();
   renderMenu();
   renderCart();
   renderAdmin();
 }
 
-function resetMenuToDefault() {
+async function resetMenuToDefault() {
   const confirmed = confirm("Restaurar o cardapio de exemplo? As alteracoes locais serao perdidas.");
   if (!confirmed) return;
+
+  if (database.enabled) {
+    const { error } = await database.client.from("menu_items").upsert(
+      defaultMenuItems.map((item, index) => ({
+        id: item.id,
+        name: item.name,
+        category: item.category,
+        description: item.description,
+        price: item.price,
+        image: item.image,
+        sort_order: index + 1,
+        active: true,
+        updated_at: new Date().toISOString(),
+      }))
+    );
+
+    if (error) {
+      console.error(error);
+      alert("Nao consegui restaurar o cardapio no banco de dados.");
+      return;
+    }
+  }
+
   state.menuItems = [...defaultMenuItems];
-  saveMenu();
+  await saveMenu();
   resetForm();
   renderCategories();
   renderMenu();
@@ -594,17 +811,26 @@ function bindEvents() {
     renderCart();
   });
   $("#sendOrder").addEventListener("click", sendOrder);
-  $("#clearOrders").addEventListener("click", () => {
+  $("#clearOrders").addEventListener("click", async () => {
+    if (database.enabled) {
+      const { error } = await database.client.from("orders").delete().eq("status", "Finalizado");
+      if (error) {
+        console.error(error);
+        alert("Nao consegui limpar os pedidos finalizados.");
+        return;
+      }
+    }
+
     state.orders = state.orders.filter((order) => order.status !== "Finalizado");
-    saveOrders();
+    await saveOrders();
     renderKitchen();
     renderAdminOrders();
   });
 
-  adminOrders.addEventListener("click", (event) => {
+  adminOrders.addEventListener("click", async (event) => {
     const button = event.target.closest("[data-status]");
     if (!button) return;
-    updateOrderStatus(button.dataset.status);
+    await updateOrderStatus(button.dataset.status);
   });
 
   $("#loginButton").addEventListener("click", loginAdmin);
@@ -642,11 +868,56 @@ function bindEvents() {
   });
 }
 
-renderCategories();
-renderMenu();
-renderCart();
-renderKitchen();
-renderAdminOrders();
-toggleDeliveryFields();
-bindEvents();
-renderAdmin();
+function subscribeToDatabaseChanges() {
+  if (!database.enabled) return;
+
+  database.client
+    .channel("restaurant-menu-changes")
+    .on("postgres_changes", { event: "*", schema: "public", table: "menu_items" }, async () => {
+      await loadMenuFromDatabase();
+      renderCategories();
+      renderMenu();
+      renderAdmin();
+    })
+    .subscribe();
+
+  database.client
+    .channel("restaurant-order-changes")
+    .on("postgres_changes", { event: "*", schema: "public", table: "orders" }, async () => {
+      await loadOrdersFromDatabase();
+      renderKitchen();
+      renderAdminOrders();
+    })
+    .on("postgres_changes", { event: "*", schema: "public", table: "order_items" }, async () => {
+      await loadOrdersFromDatabase();
+      renderKitchen();
+      renderAdminOrders();
+    })
+    .subscribe();
+
+  database.client.auth.onAuthStateChange((_event, session) => {
+    state.isAdminLoggedIn = Boolean(session);
+    renderAdmin();
+  });
+}
+
+async function initApp() {
+  bindEvents();
+
+  if (database.enabled) {
+    await loadSessionFromDatabase();
+    await loadMenuFromDatabase();
+    await loadOrdersFromDatabase();
+    subscribeToDatabaseChanges();
+  }
+
+  renderCategories();
+  renderMenu();
+  renderCart();
+  renderKitchen();
+  renderAdminOrders();
+  toggleDeliveryFields();
+  renderAdmin();
+}
+
+initApp();

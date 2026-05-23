@@ -110,8 +110,8 @@
           <p class="eyebrow">Administracao</p>
           <h2>Entrar para gerenciar a casa</h2>
           <label class="field">
-            <span>Usuario</span>
-            <input id="adminUser" type="text" autocomplete="username" placeholder="admin" />
+            <span>Email</span>
+            <input id="adminUser" type="email" autocomplete="username" placeholder="admin@heitor.com" />
           </label>
           <label class="field">
             <span>Senha</span>
@@ -204,6 +204,8 @@
 
     <div id="toast" class="toast" role="status" aria-live="polite"></div>
 
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="./supabase-config.js"></script>
     <script src="./app.js"></script>
   </body>
 </html>
