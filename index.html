@@ -1,0 +1,200 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Sabor da Casa | Pedidos</title>
+    <link rel="preconnect" href="https://images.unsplash.com" />
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <header class="topbar">
+      <div>
+        <p class="eyebrow">Restaurante</p>
+        <h1>Sabor da Casa</h1>
+      </div>
+      <nav class="tabs" aria-label="Areas do sistema">
+        <button class="tab active" data-view="cliente">Cliente</button>
+        <button class="tab" data-view="cozinha">Cozinha</button>
+        <button class="tab" data-view="admin">Admin</button>
+      </nav>
+    </header>
+
+    <main>
+      <section class="hero" aria-label="Destaque do restaurante">
+        <div class="hero-content">
+          <p class="eyebrow">Pedidos digitais</p>
+          <h2>Cardapio, mesa e tele-entrega em um so lugar.</h2>
+          <p>O cliente escolhe os itens, envia o pedido e a cozinha recebe com mesa, endereco e observacoes.</p>
+        </div>
+      </section>
+
+      <section id="clienteView" class="workspace active-view">
+        <aside class="sidebar">
+          <div class="panel">
+            <h2>Pedido</h2>
+            <div class="order-type">
+              <label>
+                <input type="radio" name="orderType" value="mesa" checked />
+                Mesa
+              </label>
+              <label>
+                <input type="radio" name="orderType" value="entrega" />
+                Tele-entrega
+              </label>
+            </div>
+
+            <label class="field" id="tableField">
+              <span>Mesa</span>
+              <input id="tableNumber" type="number" min="1" placeholder="Ex: 8" />
+            </label>
+
+            <div id="deliveryFields" class="delivery-fields">
+              <label class="field">
+                <span>Nome</span>
+                <input id="customerName" type="text" placeholder="Nome do cliente" />
+              </label>
+              <label class="field">
+                <span>Telefone</span>
+                <input id="customerPhone" type="tel" placeholder="(00) 00000-0000" />
+              </label>
+              <label class="field">
+                <span>Endereco</span>
+                <textarea id="customerAddress" rows="3" placeholder="Rua, numero, bairro"></textarea>
+              </label>
+            </div>
+          </div>
+
+          <div class="panel cart-panel">
+            <div class="panel-title-row">
+              <h2>Carrinho</h2>
+              <button id="clearCart" class="icon-button" title="Limpar carrinho" aria-label="Limpar carrinho">X</button>
+            </div>
+            <div id="cartItems" class="cart-items empty-state">Nenhum item ainda.</div>
+            <div class="cart-total">
+              <span>Total</span>
+              <strong id="cartTotal">R$ 0,00</strong>
+            </div>
+            <label class="field">
+              <span>Observacao geral</span>
+              <textarea id="generalNote" rows="3" placeholder="Ex: sem cebola, entregar troco para R$ 100"></textarea>
+            </label>
+            <button id="sendOrder" class="primary-button">Enviar pedido</button>
+          </div>
+        </aside>
+
+        <section class="menu-area">
+          <div class="section-heading">
+            <div>
+              <p class="eyebrow">Cardapio</p>
+              <h2>Escolha por categoria</h2>
+            </div>
+            <div id="categoryFilters" class="category-filters" aria-label="Categorias"></div>
+          </div>
+          <div id="menuGrid" class="menu-grid"></div>
+        </section>
+      </section>
+
+      <section id="cozinhaView" class="kitchen-view">
+        <div class="section-heading">
+          <div>
+            <p class="eyebrow">Painel da cozinha</p>
+            <h2>Pedidos recebidos</h2>
+          </div>
+          <button id="clearOrders" class="secondary-button">Limpar pedidos finalizados</button>
+        </div>
+        <div id="kitchenOrders" class="orders-grid empty-state">Nenhum pedido recebido.</div>
+      </section>
+
+      <section id="adminView" class="admin-view">
+        <div id="loginPanel" class="admin-login panel">
+          <p class="eyebrow">Administracao</p>
+          <h2>Entrar para editar o cardapio</h2>
+          <label class="field">
+            <span>Usuario</span>
+            <input id="adminUser" type="text" autocomplete="username" placeholder="admin" />
+          </label>
+          <label class="field">
+            <span>Senha</span>
+            <input id="adminPassword" type="password" autocomplete="current-password" placeholder="senha123" />
+          </label>
+          <button id="loginButton" class="primary-button">Entrar</button>
+          <p id="loginMessage" class="form-message"></p>
+        </div>
+
+        <div id="adminPanel" class="admin-panel">
+          <div class="section-heading">
+            <div>
+              <p class="eyebrow">Painel do chefe</p>
+              <h2>Editar cardapio</h2>
+            </div>
+            <button id="logoutButton" class="secondary-button">Sair</button>
+          </div>
+
+          <div class="admin-layout">
+            <form id="menuForm" class="panel menu-form">
+              <input id="editingId" type="hidden" />
+              <h3 id="formTitle">Novo item</h3>
+              <label class="field">
+                <span>Nome</span>
+                <input id="itemName" type="text" required placeholder="Ex: Pizza de calabresa" />
+              </label>
+              <label class="field">
+                <span>Categoria</span>
+                <select id="itemCategory">
+                  <option>Comidas</option>
+                  <option>Bebidas</option>
+                  <option>Sobremesas</option>
+                </select>
+              </label>
+              <label class="field">
+                <span>Descricao</span>
+                <textarea id="itemDescription" rows="3" required placeholder="Ingredientes ou detalhes do item"></textarea>
+              </label>
+              <label class="field">
+                <span>Preco</span>
+                <input id="itemPrice" type="number" min="0" step="0.01" required placeholder="29.90" />
+              </label>
+              <label class="field">
+                <span>Foto</span>
+                <input id="itemImage" type="file" accept="image/*" />
+              </label>
+              <img id="imagePreview" class="image-preview" alt="Previa da foto" />
+              <div class="form-actions">
+                <button class="primary-button" type="submit">Salvar item</button>
+                <button id="cancelEdit" class="secondary-button" type="button">Cancelar</button>
+              </div>
+            </form>
+
+            <div class="panel">
+              <div class="panel-title-row">
+                <h3>Itens cadastrados</h3>
+                <button id="resetMenu" class="secondary-button">Restaurar exemplo</button>
+              </div>
+              <div id="adminItems" class="admin-items"></div>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <template id="menuItemTemplate">
+      <article class="menu-card">
+        <img alt="" />
+        <div class="menu-card-body">
+          <div>
+            <p class="category-label"></p>
+            <h3></h3>
+            <p class="description"></p>
+          </div>
+          <div class="card-actions">
+            <strong class="price"></strong>
+            <button class="add-button">Adicionar</button>
+          </div>
+        </div>
+      </article>
+    </template>
+
+    <script src="./app.js"></script>
+  </body>
+</html>
