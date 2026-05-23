@@ -1,4 +1,4 @@
-# heitorI.A
+# heitor
 
 Projeto de cardapio digital com pedidos por mesa e tele-entrega.
 
