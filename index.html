@@ -15,7 +15,7 @@
       </div>
       <nav class="tabs" aria-label="Areas do sistema">
         <button class="tab active" data-view="cliente">Cliente</button>
-        <button class="tab" data-view="cozinha">Cozinha</button>
+        <button class="tab" data-view="cozinha">Fila</button>
         <button class="tab" data-view="admin">Admin</button>
       </nav>
     </header>
@@ -98,10 +98,9 @@
       <section id="cozinhaView" class="kitchen-view">
         <div class="section-heading">
           <div>
-            <p class="eyebrow">Painel da cozinha</p>
-            <h2>Pedidos recebidos</h2>
+            <p class="eyebrow">Acompanhamento</p>
+            <h2>Fila de pedidos</h2>
           </div>
-          <button id="clearOrders" class="secondary-button">Limpar pedidos finalizados</button>
         </div>
         <div id="kitchenOrders" class="orders-grid empty-state">Nenhum pedido recebido.</div>
       </section>
@@ -173,6 +172,14 @@
               </div>
               <div id="adminItems" class="admin-items"></div>
             </div>
+          </div>
+
+          <div class="panel admin-orders-panel">
+            <div class="panel-title-row">
+              <h3>Controle da cozinha</h3>
+              <button id="clearOrders" class="secondary-button">Limpar pedidos finalizados</button>
+            </div>
+            <div id="adminOrders" class="orders-grid empty-state">Nenhum pedido recebido.</div>
           </div>
         </div>
       </section>

@@ -89,6 +89,7 @@ const menuGrid = $("#menuGrid");
 const cartItems = $("#cartItems");
 const kitchenOrders = $("#kitchenOrders");
 const adminItems = $("#adminItems");
+const adminOrders = $("#adminOrders");
 const channel = "BroadcastChannel" in window ? new BroadcastChannel("restaurant-orders") : null;
 
 function saveMenu() {
@@ -249,12 +250,63 @@ function renderKitchen() {
   const activeOrders = state.orders.filter((order) => order.status !== "Finalizado");
   if (!activeOrders.length) {
     kitchenOrders.className = "orders-grid empty-state";
-    kitchenOrders.textContent = "Nenhum pedido recebido.";
+    kitchenOrders.textContent = "Nenhum pedido na fila.";
     return;
   }
 
   kitchenOrders.className = "orders-grid";
   kitchenOrders.innerHTML = activeOrders
+    .map((order, index) => {
+      const when = new Date(order.createdAt).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
+      const destination =
+        order.type === "mesa"
+          ? `Mesa ${order.table}`
+          : `Tele-entrega - ${order.customer.name}`;
+      const positionText = index === 0 ? "E o proximo da fila" : `${index} pedido${index > 1 ? "s" : ""} antes deste`;
+
+      return `
+        <article class="order-card">
+          <header>
+            <div>
+              <h3>${destination}</h3>
+              <p class="order-time">${when}</p>
+            </div>
+            <span class="badge ${order.status === "Finalizado" ? "done" : ""}">${order.status}</span>
+          </header>
+          <p class="queue-position">${positionText}</p>
+          <ol class="order-list">
+            ${order.items
+              .map(
+                (item) => `
+                  <li>
+                    <strong>${item.quantity}x ${item.name}</strong>
+                    ${item.note ? `<br><span>Obs: ${item.note}</span>` : ""}
+                  </li>
+                `
+              )
+              .join("")}
+          </ol>
+          <div class="order-meta">
+            ${order.note ? `<span><strong>Observacao geral:</strong> ${order.note}</span>` : ""}
+            <span><strong>Total:</strong> ${currency.format(order.total)}</span>
+          </div>
+        </article>
+      `;
+    })
+    .join("");
+}
+
+function renderAdminOrders() {
+  if (!adminOrders) return;
+  const activeOrders = state.orders.filter((order) => order.status !== "Finalizado");
+  if (!activeOrders.length) {
+    adminOrders.className = "orders-grid empty-state";
+    adminOrders.textContent = "Nenhum pedido recebido.";
+    return;
+  }
+
+  adminOrders.className = "orders-grid";
+  adminOrders.innerHTML = activeOrders
     .map((order) => {
       const when = new Date(order.createdAt).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
       const destination =
@@ -269,7 +321,7 @@ function renderKitchen() {
               <h3>${order.type === "mesa" ? `Mesa ${order.table}` : "Tele-entrega"}</h3>
               <p class="order-time">${when}</p>
             </div>
-            <span class="badge ${order.status === "Finalizado" ? "done" : ""}">${order.status}</span>
+            <span class="badge">${order.status}</span>
           </header>
           <ol class="order-list">
             ${order.items
@@ -295,6 +347,15 @@ function renderKitchen() {
     .join("");
 }
 
+function updateOrderStatus(orderId) {
+  const order = state.orders.find((item) => item.id === orderId);
+  if (!order) return;
+  order.status = order.status === "Novo" ? "Em preparo" : "Finalizado";
+  saveOrders();
+  renderKitchen();
+  renderAdminOrders();
+}
+
 function toggleDeliveryFields() {
   const isDelivery = getOrderType() === "entrega";
   $("#deliveryFields").classList.toggle("visible", isDelivery);
@@ -314,6 +375,7 @@ function renderAdmin() {
   $("#adminPanel").style.display = state.isAdminLoggedIn ? "block" : "none";
   if (!state.isAdminLoggedIn) return;
 
+  renderAdminOrders();
   adminItems.innerHTML = state.menuItems
     .map(
       (item) => `
@@ -490,16 +552,13 @@ function bindEvents() {
     state.orders = state.orders.filter((order) => order.status !== "Finalizado");
     saveOrders();
     renderKitchen();
+    renderAdminOrders();
   });
 
-  kitchenOrders.addEventListener("click", (event) => {
+  adminOrders.addEventListener("click", (event) => {
     const button = event.target.closest("[data-status]");
     if (!button) return;
-    const order = state.orders.find((item) => item.id === button.dataset.status);
-    if (!order) return;
-    order.status = order.status === "Novo" ? "Em preparo" : "Finalizado";
-    saveOrders();
-    renderKitchen();
+    updateOrderStatus(button.dataset.status);
   });
 
   $("#loginButton").addEventListener("click", loginAdmin);
@@ -533,6 +592,7 @@ function bindEvents() {
     if (event.data?.type !== "orders-updated") return;
     state.orders = event.data.orders;
     renderKitchen();
+    renderAdminOrders();
   });
 }
 
@@ -540,6 +600,7 @@ renderCategories();
 renderMenu();
 renderCart();
 renderKitchen();
+renderAdminOrders();
 toggleDeliveryFields();
 bindEvents();
 renderAdmin();

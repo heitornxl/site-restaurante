@@ -523,6 +523,19 @@ textarea:focus {
   color: var(--muted);
 }
 
+.queue-position {
+  margin: 0 0 14px;
+  border-left: 4px solid var(--accent);
+  padding: 8px 10px;
+  background: rgba(185, 45, 32, 0.08);
+  color: var(--accent-dark);
+  font-weight: 800;
+}
+
+.admin-orders-panel {
+  margin-top: 20px;
+}
+
 @media (max-width: 900px) {
   .topbar,
   .section-heading,
