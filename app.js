@@ -253,6 +253,26 @@ const state = {
   knownOrderStatuses: {},
 };
 
+const removableIngredients = [
+  "Cebola",
+  "Tomate",
+  "Alface",
+  "Queijo",
+  "Bacon",
+  "Picles",
+  "Molho da casa",
+  "Ovo",
+];
+
+const addonOptions = [
+  { name: "Batata frita", price: 12.9 },
+  { name: "Salada extra", price: 8.9 },
+  { name: "Queijo extra", price: 4.9 },
+  { name: "Bacon extra", price: 6.9 },
+  { name: "Molho extra", price: 3.5 },
+  { name: "Ovo extra", price: 4 },
+];
+
 localStorage.setItem("restaurant-client-token", state.clientToken);
 
 const supabaseConfig = window.SUPABASE_CONFIG || {};
@@ -285,6 +305,7 @@ const adminOrders = $("#adminOrders");
 const adminCategoryFilters = $("#adminCategoryFilters");
 const channel = "BroadcastChannel" in window ? new BroadcastChannel("restaurant-orders") : null;
 let menuCardObserver = null;
+let customizationTarget = null;
 
 function rememberCustomerOrder(orderId) {
   if (state.trackedOrderIds.includes(orderId)) return;
@@ -355,6 +376,15 @@ function renderStatusSteps(order) {
   return steps
     .map((status, index) => `<span class="${index <= currentIndex ? "active" : ""}">${getStatusStepLabel(status)}</span>`)
     .join("");
+}
+
+function escapeHtml(value = "") {
+  return String(value)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
 }
 
 function normalizeMenuItem(row) {
@@ -511,7 +541,7 @@ function renderMenu() {
     card.querySelector("h3").textContent = item.name;
     card.querySelector(".description").textContent = item.description;
     card.querySelector(".price").textContent = currency.format(item.price);
-    card.querySelector(".add-button").addEventListener("click", (event) => addToCart(item.id, event.currentTarget));
+    card.querySelector(".add-button").addEventListener("click", (event) => openCustomization(item.id, event.currentTarget));
     menuGrid.appendChild(card);
   });
 
@@ -581,19 +611,95 @@ function scrollToCart() {
   $(".cart-panel").scrollIntoView({ behavior: "smooth", block: "start" });
 }
 
-function addToCart(itemId, button) {
-  const existing = state.cart.find((item) => item.id === itemId);
-  if (existing) {
-    existing.quantity += 1;
-  } else {
-    const item = state.menuItems.find((menuItem) => menuItem.id === itemId);
-    state.cart.push({ ...item, quantity: 1, note: "" });
-  }
+function openCustomization(itemId, button) {
+  const item = state.menuItems.find((menuItem) => menuItem.id === itemId);
+  if (!item) return;
+
+  customizationTarget = { item, button };
+  $("#customItemImage").src = menuImageUrl(item.image, 900, 900);
+  $("#customItemImage").alt = item.name;
+  $("#customItemName").textContent = item.name;
+  $("#customItemDescription").textContent = item.description;
+  $("#customItemPrice").textContent = currency.format(item.price);
+  $("#customExtraRequest").value = "";
+
+  $("#removeOptions").innerHTML = removableIngredients
+    .map(
+      (ingredient) => `
+        <label class="option-pill">
+          <input type="checkbox" value="${escapeHtml(ingredient)}" data-remove-option />
+          <span>${escapeHtml(ingredient)}</span>
+        </label>
+      `
+    )
+    .join("");
+
+  $("#addonOptions").innerHTML = addonOptions
+    .map(
+      (addon, index) => `
+        <label class="option-pill">
+          <input type="checkbox" value="${index}" data-addon-option />
+          <span>${escapeHtml(addon.name)} <small>+ ${currency.format(addon.price)}</small></span>
+        </label>
+      `
+    )
+    .join("");
+
+  updateCustomizationTotal();
+  $("#customizationModal").classList.add("visible");
+  $("#customizationModal").setAttribute("aria-hidden", "false");
+  document.body.classList.add("modal-open");
+}
+
+function closeCustomization() {
+  $("#customizationModal").classList.remove("visible");
+  $("#customizationModal").setAttribute("aria-hidden", "true");
+  document.body.classList.remove("modal-open");
+  customizationTarget = null;
+}
+
+function getCustomizationSelection() {
+  const removedIngredients = $$("[data-remove-option]:checked").map((input) => input.value);
+  const addons = $$("[data-addon-option]:checked").map((input) => addonOptions[Number(input.value)]).filter(Boolean);
+  const extraRequest = $("#customExtraRequest").value.trim();
+
+  return { removedIngredients, addons, extraRequest };
+}
+
+function getAddonTotal(addons = []) {
+  return addons.reduce((total, addon) => total + Number(addon.price || 0), 0);
+}
+
+function getCartUnitPrice(item) {
+  return item.price + getAddonTotal(item.addons);
+}
+
+function updateCustomizationTotal() {
+  if (!customizationTarget) return;
+  const { addons } = getCustomizationSelection();
+  $("#customItemTotal").textContent = currency.format(customizationTarget.item.price + getAddonTotal(addons));
+}
+
+function addCustomizedItemToCart() {
+  if (!customizationTarget) return;
+  const { item, button } = customizationTarget;
+  const customization = getCustomizationSelection();
+
+  state.cart.push({
+    ...item,
+    cartId: crypto.randomUUID(),
+    quantity: 1,
+    note: "",
+    removedIngredients: customization.removedIngredients,
+    addons: customization.addons,
+    extraRequest: customization.extraRequest,
+  });
+
   renderCart();
   confirmAddButton(button);
   animateAddToCart(button);
-  const item = state.menuItems.find((menuItem) => menuItem.id === itemId);
   showToast(`${item.name} foi adicionado ao carrinho.`);
+  closeCustomization();
 }
 
 function animateAddToCart(button) {
@@ -628,17 +734,31 @@ function animateAddToCart(button) {
   ).finished.finally(() => clone.remove());
 }
 
-function changeQuantity(itemId, amount) {
-  const item = state.cart.find((cartItem) => cartItem.id === itemId);
+function changeQuantity(cartId, amount) {
+  const item = state.cart.find((cartItem) => cartItem.cartId === cartId);
   if (!item) return;
   item.quantity += amount;
   state.cart = state.cart.filter((cartItem) => cartItem.quantity > 0);
   renderCart();
 }
 
-function updateItemNote(itemId, note) {
-  const item = state.cart.find((cartItem) => cartItem.id === itemId);
+function updateItemNote(cartId, note) {
+  const item = state.cart.find((cartItem) => cartItem.cartId === cartId);
   if (item) item.note = note;
+}
+
+function buildCustomizationSummary(item) {
+  const lines = [];
+  if (item.removedIngredients?.length) lines.push(`Remover: ${item.removedIngredients.join(", ")}`);
+  if (item.addons?.length) {
+    lines.push(`Adicionais: ${item.addons.map((addon) => `${addon.name} (+${currency.format(addon.price)})`).join(", ")}`);
+  }
+  if (item.extraRequest) lines.push(`Complemento: ${item.extraRequest}`);
+  return lines;
+}
+
+function buildItemNote(item) {
+  return [...buildCustomizationSummary(item), item.note ? `Obs: ${item.note}` : ""].filter(Boolean).join(" | ");
 }
 
 function renderCart() {
@@ -652,26 +772,37 @@ function renderCart() {
   cartItems.className = "cart-items";
   cartItems.innerHTML = state.cart
     .map(
-      (item) => `
+      (item) => {
+        const unitPrice = getCartUnitPrice(item);
+        const customizationSummary = buildCustomizationSummary(item);
+
+        return `
         <div class="cart-line">
           <div class="cart-line-top">
             <img class="cart-thumb" src="${menuImageUrl(item.image, 480, 480)}" alt="${item.name}" loading="lazy" decoding="async" />
             <div class="cart-line-info">
-              <strong>${item.name}</strong>
-              <span>${currency.format(item.price * item.quantity)}</span>
+              <strong>${escapeHtml(item.name)}</strong>
+              <span>${currency.format(unitPrice * item.quantity)}</span>
+              ${unitPrice > item.price ? `<small>Base ${currency.format(item.price)} + adicionais</small>` : ""}
             </div>
           </div>
+          ${
+            customizationSummary.length
+              ? `<ul class="cart-customizations">${customizationSummary.map((line) => `<li>${escapeHtml(line)}</li>`).join("")}</ul>`
+              : ""
+          }
           <div class="qty-controls">
-            <button data-action="dec" data-id="${item.id}" aria-label="Diminuir ${item.name}">-</button>
+            <button data-action="dec" data-id="${item.cartId}" aria-label="Diminuir ${escapeHtml(item.name)}">-</button>
             <span>${item.quantity} unidade${item.quantity > 1 ? "s" : ""}</span>
-            <button data-action="inc" data-id="${item.id}" aria-label="Aumentar ${item.name}">+</button>
+            <button data-action="inc" data-id="${item.cartId}" aria-label="Aumentar ${escapeHtml(item.name)}">+</button>
           </div>
           <label class="field cart-note">
             <span>Observacao do item</span>
-            <input data-note="${item.id}" value="${item.note}" placeholder="Ex: ponto da carne, sem molho" />
+            <input data-note="${item.cartId}" value="${escapeHtml(item.note)}" placeholder="Ex: ponto da carne, sem molho" />
           </label>
         </div>
-      `
+      `;
+      }
     )
     .join("");
 
@@ -679,7 +810,7 @@ function renderCart() {
 }
 
 function getCartTotal() {
-  return state.cart.reduce((total, item) => total + item.price * item.quantity, 0);
+  return state.cart.reduce((total, item) => total + getCartUnitPrice(item) * item.quantity, 0);
 }
 
 function getOrderType() {
@@ -726,8 +857,8 @@ async function sendOrder() {
       id: item.id,
       name: item.name,
       quantity: item.quantity,
-      note: item.note,
-      price: item.price,
+      note: buildItemNote(item),
+      price: getCartUnitPrice(item),
     })),
   };
 
@@ -825,15 +956,15 @@ function renderCustomerOrders() {
               .map(
                 (item) => `
                   <li>
-                    <strong>${item.quantity}x ${item.name}</strong>
-                    ${item.note ? `<br><span>Obs: ${item.note}</span>` : ""}
+                    <strong>${item.quantity}x ${escapeHtml(item.name)}</strong>
+                    ${item.note ? `<br><span>${escapeHtml(item.note)}</span>` : ""}
                   </li>
                 `
               )
               .join("")}
           </ol>
           <div class="order-meta">
-            ${order.note ? `<span><strong>Observacao geral:</strong> ${order.note}</span>` : ""}
+            ${order.note ? `<span><strong>Observacao geral:</strong> ${escapeHtml(order.note)}</span>` : ""}
             <span><strong>Total:</strong> ${currency.format(order.total)}</span>
           </div>
         </article>
@@ -881,8 +1012,8 @@ function renderAdminOrders() {
               .map(
                 (item) => `
                   <li>
-                    <strong>${item.quantity}x ${item.name}</strong>
-                    ${item.note ? `<br><span>Obs: ${item.note}</span>` : ""}
+                    <strong>${item.quantity}x ${escapeHtml(item.name)}</strong>
+                    ${item.note ? `<br><span>${escapeHtml(item.note)}</span>` : ""}
                   </li>
                 `
               )
@@ -890,7 +1021,7 @@ function renderAdminOrders() {
           </ol>
           <div class="order-meta">
             <span>${destination}</span>
-            ${order.note ? `<span><strong>Observacao geral:</strong> ${order.note}</span>` : ""}
+            ${order.note ? `<span><strong>Observacao geral:</strong> ${escapeHtml(order.note)}</span>` : ""}
             <span><strong>Total:</strong> ${currency.format(order.total)}</span>
           </div>
           <button class="status-button" data-status="${order.id}">${getStatusButtonLabel(order)}</button>
@@ -1172,6 +1303,20 @@ function bindEvents() {
     if (event.target.matches("[data-note]")) {
       updateItemNote(event.target.dataset.note, event.target.value);
     }
+  });
+
+  $("#customizationModal").addEventListener("click", (event) => {
+    if (event.target.id === "customizationModal") closeCustomization();
+  });
+  $("#customizationModal").addEventListener("change", (event) => {
+    if (event.target.matches("[data-addon-option]")) updateCustomizationTotal();
+  });
+  $("#closeCustomization").addEventListener("click", closeCustomization);
+  $("#cancelCustomization").addEventListener("click", closeCustomization);
+  $("#confirmCustomization").addEventListener("click", addCustomizedItemToCart);
+
+  document.addEventListener("keydown", (event) => {
+    if (event.key === "Escape" && $("#customizationModal").classList.contains("visible")) closeCustomization();
   });
 
   $("#toast").addEventListener("click", (event) => {

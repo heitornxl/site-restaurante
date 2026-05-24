@@ -420,6 +420,25 @@ textarea:focus {
   font-weight: 800;
 }
 
+.cart-line-info small {
+  color: rgba(231, 196, 125, 0.72);
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+
+.cart-customizations {
+  display: grid;
+  gap: 4px;
+  margin: 0;
+  padding: 10px 12px;
+  list-style: none;
+  border: 1px solid rgba(231, 196, 125, 0.16);
+  background: rgba(255, 248, 232, 0.04);
+  color: rgba(255, 244, 218, 0.74);
+  font-size: 0.82rem;
+  line-height: 1.35;
+}
+
 .qty-controls button {
   width: 30px;
   height: 30px;
@@ -442,6 +461,172 @@ textarea:focus {
   border-top: 2px solid var(--line);
   padding-top: 14px;
   font-size: 1.05rem;
+}
+
+body.modal-open {
+  overflow: hidden;
+}
+
+.customization-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+  display: grid;
+  place-items: end center;
+  padding: 18px;
+  background: rgba(0, 0, 0, 0.72);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.24s ease;
+}
+
+.customization-modal.visible {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.customization-dialog {
+  position: relative;
+  width: min(760px, 100%);
+  max-height: min(88vh, 820px);
+  overflow: auto;
+  border: 1px solid rgba(231, 196, 125, 0.28);
+  background:
+    linear-gradient(145deg, rgba(35, 26, 18, 0.98), rgba(9, 8, 7, 0.98)),
+    #111;
+  color: #fff1d4;
+  box-shadow: 0 28px 90px rgba(0, 0, 0, 0.58);
+  transform: translateY(18px) scale(0.98);
+  transition: transform 0.28s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.customization-modal.visible .customization-dialog {
+  transform: translateY(0) scale(1);
+}
+
+.customization-close {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  z-index: 1;
+  border-color: rgba(231, 196, 125, 0.26);
+  background: rgba(255, 248, 232, 0.08);
+  color: #fff1d4;
+}
+
+.customization-head {
+  display: grid;
+  grid-template-columns: minmax(110px, 190px) minmax(0, 1fr);
+  gap: 20px;
+  align-items: center;
+  padding: 28px;
+  border-bottom: 1px solid rgba(231, 196, 125, 0.16);
+}
+
+.customization-head img {
+  width: 100%;
+  aspect-ratio: 1;
+  object-fit: cover;
+  border: 1px solid rgba(231, 196, 125, 0.28);
+}
+
+.customization-head h2 {
+  margin: 4px 42px 8px 0;
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: clamp(1.7rem, 4vw, 2.7rem);
+  line-height: 0.96;
+}
+
+.customization-head p:not(.eyebrow) {
+  margin: 0 0 12px;
+  color: rgba(255, 244, 218, 0.7);
+}
+
+.customization-head strong,
+.customization-total strong {
+  color: #f0c66f;
+}
+
+.customization-groups {
+  display: grid;
+  gap: 22px;
+  padding: 26px 28px 18px;
+}
+
+.customization-groups h3 {
+  margin: 0 0 12px;
+  color: #fff7e6;
+  font-size: 1rem;
+}
+
+.option-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.option-pill {
+  display: inline-flex;
+  align-items: center;
+  min-height: 42px;
+  cursor: pointer;
+}
+
+.option-pill input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.option-pill span {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 42px;
+  padding: 0 14px;
+  border: 1px solid rgba(231, 196, 125, 0.22);
+  background: rgba(255, 248, 232, 0.06);
+  color: rgba(255, 244, 218, 0.82);
+  font-weight: 800;
+  transition: transform 0.2s ease, border-color 0.2s ease, background 0.2s ease, color 0.2s ease;
+}
+
+.option-pill small {
+  color: rgba(240, 198, 111, 0.86);
+  font-size: 0.76rem;
+}
+
+.option-pill input:checked + span {
+  border-color: rgba(240, 198, 111, 0.82);
+  background: rgba(240, 198, 111, 0.16);
+  color: #fff7e6;
+  transform: translateY(-1px);
+}
+
+.customization-dialog .field input {
+  background: rgba(255, 248, 232, 0.08);
+  border-color: rgba(231, 196, 125, 0.22);
+  color: #fff7e6;
+}
+
+.customization-total,
+.customization-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 18px 28px;
+  border-top: 1px solid rgba(231, 196, 125, 0.16);
+}
+
+.customization-total span {
+  color: rgba(255, 244, 218, 0.72);
+  font-weight: 800;
+}
+
+.customization-actions .primary-button,
+.customization-actions .secondary-button {
+  min-width: 180px;
 }
 
 .empty-state {
@@ -2010,4 +2195,61 @@ body {
 
 .admin-view .form-message {
   color: #9e2f20;
+}
+
+@media (max-width: 680px) {
+  .customization-modal {
+    padding: 0;
+    align-items: end;
+  }
+
+  .customization-dialog {
+    width: 100%;
+    max-height: 92vh;
+    border-inline: 0;
+    border-bottom: 0;
+  }
+
+  .customization-head {
+    grid-template-columns: 96px minmax(0, 1fr);
+    gap: 14px;
+    padding: 22px 16px;
+  }
+
+  .customization-head h2 {
+    margin-right: 34px;
+    font-size: 1.55rem;
+  }
+
+  .customization-groups {
+    padding: 20px 16px 14px;
+  }
+
+  .option-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 9px;
+  }
+
+  .option-pill span {
+    width: 100%;
+    justify-content: center;
+    padding: 0 10px;
+    text-align: center;
+  }
+
+  .customization-total,
+  .customization-actions {
+    padding: 16px;
+  }
+
+  .customization-actions {
+    flex-direction: column-reverse;
+  }
+
+  .customization-actions .primary-button,
+  .customization-actions .secondary-button {
+    width: 100%;
+    min-width: 0;
+  }
 }

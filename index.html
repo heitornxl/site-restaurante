@@ -205,6 +205,48 @@
       </article>
     </template>
 
+    <div id="customizationModal" class="customization-modal" aria-hidden="true">
+      <div class="customization-dialog" role="dialog" aria-modal="true" aria-labelledby="customItemName">
+        <button id="closeCustomization" class="icon-button customization-close" type="button" aria-label="Fechar personalizacao">X</button>
+        <div class="customization-head">
+          <img id="customItemImage" alt="" />
+          <div>
+            <p class="eyebrow">Personalizar pedido</p>
+            <h2 id="customItemName"></h2>
+            <p id="customItemDescription"></p>
+            <strong id="customItemPrice"></strong>
+          </div>
+        </div>
+
+        <div class="customization-groups">
+          <section>
+            <h3>Remover ingrediente</h3>
+            <div id="removeOptions" class="option-grid"></div>
+          </section>
+
+          <section>
+            <h3>Adicionais</h3>
+            <div id="addonOptions" class="option-grid"></div>
+          </section>
+
+          <label class="field">
+            <span>Outro complemento ou detalhe</span>
+            <input id="customExtraRequest" type="text" placeholder="Ex: salada extra, molho separado, sem gelo" />
+          </label>
+        </div>
+
+        <div class="customization-total">
+          <span>Total do item</span>
+          <strong id="customItemTotal">R$ 0,00</strong>
+        </div>
+
+        <div class="customization-actions">
+          <button id="cancelCustomization" class="secondary-button" type="button">Cancelar</button>
+          <button id="confirmCustomization" class="primary-button" type="button">Adicionar ao carrinho</button>
+        </div>
+      </div>
+    </div>
+
     <div id="toast" class="toast" role="status" aria-live="polite"></div>
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
