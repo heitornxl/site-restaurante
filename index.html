@@ -125,9 +125,17 @@
           <div class="section-heading">
             <div>
               <p class="eyebrow">Painel do chefe</p>
-              <h2>Editar cardapio</h2>
+              <h2>Gerenciar a casa</h2>
             </div>
             <button id="logoutButton" class="secondary-button">Sair</button>
+          </div>
+
+          <div class="panel admin-orders-panel">
+            <div class="panel-title-row">
+              <h3>Controle da cozinha</h3>
+              <button id="clearOrders" class="secondary-button">Limpar pedidos finalizados</button>
+            </div>
+            <div id="adminOrders" class="orders-grid empty-state">Nenhum pedido recebido.</div>
           </div>
 
           <div class="admin-layout">
@@ -173,16 +181,9 @@
                 <h3>Itens cadastrados</h3>
                 <button id="resetMenu" class="secondary-button">Restaurar exemplo</button>
               </div>
+              <div id="adminCategoryFilters" class="admin-category-filters" aria-label="Categorias do admin"></div>
               <div id="adminItems" class="admin-items"></div>
             </div>
-          </div>
-
-          <div class="panel admin-orders-panel">
-            <div class="panel-title-row">
-              <h3>Controle da cozinha</h3>
-              <button id="clearOrders" class="secondary-button">Limpar pedidos finalizados</button>
-            </div>
-            <div id="adminOrders" class="orders-grid empty-state">Nenhum pedido recebido.</div>
           </div>
         </div>
       </section>

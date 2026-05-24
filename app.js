@@ -243,6 +243,7 @@ const defaultMenuItems = [
 
 const state = {
   category: "Todos",
+  adminCategory: "Todos",
   cart: [],
   orders: JSON.parse(localStorage.getItem("restaurant-orders") || "[]"),
   menuItems: JSON.parse(localStorage.getItem("restaurant-menu") || "null") || [],
@@ -281,6 +282,7 @@ const cartItems = $("#cartItems");
 const kitchenOrders = $("#kitchenOrders");
 const adminItems = $("#adminItems");
 const adminOrders = $("#adminOrders");
+const adminCategoryFilters = $("#adminCategoryFilters");
 const channel = "BroadcastChannel" in window ? new BroadcastChannel("restaurant-orders") : null;
 let menuCardObserver = null;
 
@@ -426,6 +428,16 @@ function renderCategories() {
   const categories = ["Todos", ...new Set(state.menuItems.map((item) => item.category))];
   $("#categoryFilters").innerHTML = categories
     .map((category) => `<button class="${category === state.category ? "active" : ""}" data-category="${category}">${category}</button>`)
+    .join("");
+}
+
+function renderAdminCategoryFilters() {
+  if (!adminCategoryFilters) return;
+  const categories = ["Todos", ...new Set(state.menuItems.map((item) => item.category))];
+  if (!categories.includes(state.adminCategory)) state.adminCategory = "Todos";
+
+  adminCategoryFilters.innerHTML = categories
+    .map((category) => `<button class="${category === state.adminCategory ? "active" : ""}" data-admin-category="${category}">${category}</button>`)
     .join("");
 }
 
@@ -890,7 +902,19 @@ function renderAdmin() {
   if (!state.isAdminLoggedIn) return;
 
   renderAdminOrders();
-  adminItems.innerHTML = state.menuItems
+  renderAdminCategoryFilters();
+  const visibleItems = state.adminCategory === "Todos"
+    ? state.menuItems
+    : state.menuItems.filter((item) => item.category === state.adminCategory);
+
+  if (!visibleItems.length) {
+    adminItems.className = "admin-items empty-state";
+    adminItems.textContent = "Nenhum item nesta categoria.";
+    return;
+  }
+
+  adminItems.className = "admin-items";
+  adminItems.innerHTML = visibleItems
     .map(
       (item) => `
         <article class="admin-item">
@@ -1124,6 +1148,13 @@ function bindEvents() {
     state.category = button.dataset.category;
     renderCategories();
     renderMenu();
+  });
+
+  adminCategoryFilters?.addEventListener("click", (event) => {
+    const button = event.target.closest("[data-admin-category]");
+    if (!button) return;
+    state.adminCategory = button.dataset.adminCategory;
+    renderAdmin();
   });
 
   cartItems.addEventListener("click", (event) => {
