@@ -314,6 +314,49 @@ function notifyCustomerStatusChanges(previousStatuses) {
   state.knownOrderStatuses = snapshotCustomerStatuses();
 }
 
+function getOrderStatusSteps(order) {
+  return order.type === "entrega"
+    ? ["Novo", "Em preparo", "Saiu para entrega", "Finalizado"]
+    : ["Novo", "Em preparo", "Finalizado"];
+}
+
+function getStatusStepLabel(status) {
+  const labels = {
+    Novo: "Recebido",
+    "Em preparo": "Em preparo",
+    "Saiu para entrega": "Saiu para entrega",
+    Finalizado: "Finalizado",
+  };
+
+  return labels[status] || status;
+}
+
+function getNextOrderStatus(order) {
+  const steps = getOrderStatusSteps(order);
+  const currentIndex = steps.indexOf(order.status);
+  return steps[Math.min(currentIndex + 1, steps.length - 1)] || "Finalizado";
+}
+
+function getStatusButtonLabel(order) {
+  const nextStatus = getNextOrderStatus(order);
+  const labels = {
+    "Em preparo": "Marcar em preparo",
+    "Saiu para entrega": "Saiu para entrega",
+    Finalizado: "Finalizar pedido",
+  };
+
+  return labels[nextStatus] || "Atualizar status";
+}
+
+function renderStatusSteps(order) {
+  const steps = getOrderStatusSteps(order);
+  const currentIndex = Math.max(steps.indexOf(order.status), 0);
+
+  return steps
+    .map((status, index) => `<span class="${index <= currentIndex ? "active" : ""}">${getStatusStepLabel(status)}</span>`)
+    .join("");
+}
+
 function normalizeMenuItem(row) {
   return {
     id: row.id,
@@ -652,7 +695,7 @@ function validateOrder() {
 
   if (getOrderType() === "entrega") {
     const missingDeliveryData = !$("#customerName").value.trim() || !$("#customerPhone").value.trim() || !$("#customerAddress").value.trim();
-    if (missingDeliveryData) return "Preencha nome, telefone e endereco para tele-entrega.";
+    if (missingDeliveryData) return "Preencha nome, telefone e endereco para delivery.";
   }
 
   return "";
@@ -762,7 +805,7 @@ function renderCustomerOrders() {
       const destination =
         order.type === "mesa"
           ? `Mesa ${order.table}`
-          : `Tele-entrega - ${order.customer.name || "cliente"}`;
+          : `Delivery - ${order.customer.name || "cliente"}`;
 
       return `
         <article class="order-card customer-order-card">
@@ -774,9 +817,7 @@ function renderCustomerOrders() {
             <span class="badge ${order.status === "Finalizado" ? "done" : ""}">${order.status}</span>
           </header>
           <div class="status-steps" aria-label="Status do pedido">
-            <span class="${["Novo", "Em preparo", "Finalizado"].includes(order.status) ? "active" : ""}">Recebido</span>
-            <span class="${["Em preparo", "Finalizado"].includes(order.status) ? "active" : ""}">Em preparo</span>
-            <span class="${order.status === "Finalizado" ? "active" : ""}">Finalizado</span>
+            ${renderStatusSteps(order)}
           </div>
           <p class="queue-position">${customerStatusMessage(order.status)}</p>
           <ol class="order-list">
@@ -804,6 +845,7 @@ function renderCustomerOrders() {
 function customerStatusMessage(status) {
   if (status === "Novo") return "Seu pedido foi recebido e aguarda confirmacao da cozinha.";
   if (status === "Em preparo") return "A cozinha ja esta preparando seu pedido.";
+  if (status === "Saiu para entrega") return "Seu pedido saiu para entrega e esta a caminho.";
   return "Pedido finalizado. Bom apetite!";
 }
 
@@ -823,13 +865,13 @@ function renderAdminOrders() {
       const destination =
         order.type === "mesa"
           ? `<strong>Mesa:</strong> ${order.table}`
-          : `<strong>Entrega:</strong> ${order.customer.name} - ${order.customer.phone}<br><strong>Endereco:</strong> ${order.customer.address}`;
+          : `<strong>Delivery:</strong> ${order.customer.name} - ${order.customer.phone}<br><strong>Endereco:</strong> ${order.customer.address}`;
 
       return `
         <article class="order-card">
           <header>
             <div>
-              <h3>${order.type === "mesa" ? `Mesa ${order.table}` : "Tele-entrega"}</h3>
+              <h3>${order.type === "mesa" ? `Mesa ${order.table}` : "Delivery"}</h3>
               <p class="order-time">${when}</p>
             </div>
             <span class="badge">${order.status}</span>
@@ -851,7 +893,7 @@ function renderAdminOrders() {
             ${order.note ? `<span><strong>Observacao geral:</strong> ${order.note}</span>` : ""}
             <span><strong>Total:</strong> ${currency.format(order.total)}</span>
           </div>
-          <button class="status-button" data-status="${order.id}">${order.status === "Novo" ? "Marcar em preparo" : "Finalizar pedido"}</button>
+          <button class="status-button" data-status="${order.id}">${getStatusButtonLabel(order)}</button>
         </article>
       `;
     })
@@ -862,12 +904,16 @@ async function updateOrderStatus(orderId) {
   const order = state.orders.find((item) => item.id === orderId);
   if (!order) return;
   const previousStatuses = snapshotCustomerStatuses();
-  order.status = order.status === "Novo" ? "Em preparo" : "Finalizado";
+  order.status = getNextOrderStatus(order);
   if (database.enabled) {
     const { error } = await database.client.from("orders").update({ status: order.status }).eq("id", orderId);
     if (error) {
       console.error(error);
-      alert("Nao consegui atualizar o status do pedido.");
+      alert(
+        order.status === "Saiu para entrega"
+          ? "Nao consegui usar o status Saiu para entrega. Rode a atualizacao do supabase-schema.sql no Supabase antes de usar esse status online."
+          : "Nao consegui atualizar o status do pedido."
+      );
       return;
     }
   }

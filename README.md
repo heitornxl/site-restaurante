@@ -1,12 +1,12 @@
 # heitor
 
-Projeto de cardapio digital com pedidos por mesa e tele-entrega.
+Projeto de cardapio digital com pedidos por mesa e delivery.
 
 ## Funcionalidades
 
 - Cardapio separado por comidas, bebidas e sobremesas
 - Carrinho de pedidos
-- Pedido por mesa ou tele-entrega
+- Pedido por mesa ou delivery
 - Painel da cozinha para acompanhar pedidos
 - Area administrativa com login de treino
 - Edicao local de itens do cardapio

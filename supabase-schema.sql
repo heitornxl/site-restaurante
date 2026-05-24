@@ -14,7 +14,7 @@ create table if not exists public.menu_items (
 create table if not exists public.orders (
   id uuid primary key,
   type text not null check (type in ('mesa', 'entrega')),
-  status text not null default 'Novo' check (status in ('Novo', 'Em preparo', 'Finalizado')),
+  status text not null default 'Novo' check (status in ('Novo', 'Em preparo', 'Saiu para entrega', 'Finalizado')),
   table_number text,
   customer_name text,
   customer_phone text,
@@ -29,6 +29,13 @@ alter table public.orders
 
 create index if not exists orders_client_token_idx
   on public.orders (client_token);
+
+alter table public.orders
+  drop constraint if exists orders_status_check;
+
+alter table public.orders
+  add constraint orders_status_check
+  check (status in ('Novo', 'Em preparo', 'Saiu para entrega', 'Finalizado'));
 
 create table if not exists public.order_items (
   id bigserial primary key,
