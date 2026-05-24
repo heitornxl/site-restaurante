@@ -1859,3 +1859,119 @@ body {
     padding-inline: 16px;
   }
 }
+
+/* Admin contrast pass: clearer operational panels on the dark premium shell. */
+.admin-view {
+  color: #fff1d0;
+}
+
+.admin-view .section-heading {
+  border-bottom: 1px solid rgba(231, 196, 125, 0.18);
+  padding-bottom: 20px;
+}
+
+.admin-view .section-heading h2 {
+  color: #f7e1ad;
+  font-family: Georgia, "Times New Roman", serif;
+  font-weight: 400;
+}
+
+.admin-view .section-heading .eyebrow,
+.admin-view .admin-login .eyebrow {
+  color: #d8ae5e;
+}
+
+.admin-view .panel {
+  border: 1px solid rgba(231, 196, 125, 0.24);
+  background: linear-gradient(180deg, #fff8e9, #f4e3c6);
+  color: #21150d;
+  box-shadow: 0 24px 70px rgba(0, 0, 0, 0.3);
+}
+
+.admin-view .panel h2,
+.admin-view .panel h3 {
+  color: #21150d;
+}
+
+.admin-view .field {
+  color: #5f4b38;
+}
+
+.admin-view input,
+.admin-view select,
+.admin-view textarea {
+  border-color: rgba(91, 62, 32, 0.24);
+  background: rgba(255, 255, 255, 0.9);
+  color: #21150d;
+}
+
+.admin-view input::placeholder,
+.admin-view textarea::placeholder {
+  color: rgba(67, 45, 25, 0.48);
+}
+
+.admin-view input:focus,
+.admin-view select:focus,
+.admin-view textarea:focus {
+  border-color: rgba(183, 123, 40, 0.82);
+  box-shadow: 0 0 0 4px rgba(183, 123, 40, 0.16);
+}
+
+.admin-view .secondary-button {
+  border-color: rgba(91, 62, 32, 0.22);
+  background: #fffdf7;
+  color: #2b1b11;
+}
+
+.admin-view .secondary-button:hover {
+  border-color: rgba(183, 123, 40, 0.52);
+  background: #f3d48c;
+  color: #1a1009;
+}
+
+.admin-view .danger-button {
+  border-color: rgba(174, 55, 36, 0.34);
+  background: rgba(174, 55, 36, 0.1);
+  color: #9e2f20;
+}
+
+.admin-view .admin-item {
+  border-color: rgba(91, 62, 32, 0.16);
+  background: rgba(255, 255, 255, 0.72);
+  color: #21150d;
+}
+
+.admin-view .admin-item span {
+  color: #6f5b47;
+}
+
+.admin-view .order-card {
+  border-color: rgba(91, 62, 32, 0.16);
+  background: rgba(255, 255, 255, 0.82);
+  color: #21150d;
+}
+
+.admin-view .order-time,
+.admin-view .order-meta,
+.admin-view .order-list span,
+.admin-view .empty-state {
+  color: #6f5b47;
+}
+
+.admin-view .status-button,
+.admin-view .primary-button {
+  border: 1px solid rgba(183, 123, 40, 0.48);
+  background: linear-gradient(135deg, #e9c573, #a97022);
+  color: #21150d;
+  box-shadow: 0 14px 30px rgba(169, 112, 34, 0.22);
+}
+
+.admin-view .status-button:hover,
+.admin-view .primary-button:hover {
+  background: linear-gradient(135deg, #f5d994, #bd842d);
+  color: #1a1009;
+}
+
+.admin-view .form-message {
+  color: #9e2f20;
+}
