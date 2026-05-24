@@ -1140,47 +1140,6 @@ async function deleteMenuItem(itemId) {
   renderAdmin();
 }
 
-async function resetMenuToDefault() {
-  const confirmed = confirm("Restaurar o cardapio de exemplo? As alteracoes locais serao perdidas.");
-  if (!confirmed) return;
-
-  if (database.enabled) {
-    const { error: deactivateError } = await database.client.from("menu_items").update({ active: false }).neq("id", "");
-    if (deactivateError) {
-      console.error(deactivateError);
-      alert("Nao consegui limpar o cardapio antigo no banco de dados.");
-      return;
-    }
-
-    const { error } = await database.client.from("menu_items").upsert(
-      defaultMenuItems.map((item, index) => ({
-        id: item.id,
-        name: item.name,
-        category: item.category,
-        description: item.description,
-        price: item.price,
-        image: item.image,
-        sort_order: index + 1,
-        active: true,
-        updated_at: new Date().toISOString(),
-      }))
-    );
-
-    if (error) {
-      console.error(error);
-      alert("Nao consegui restaurar o cardapio no banco de dados.");
-      return;
-    }
-  }
-
-  state.menuItems = [...defaultMenuItems];
-  await saveMenu();
-  resetForm();
-  renderCategories();
-  renderMenu();
-  renderAdmin();
-}
-
 function bindEvents() {
   $$(".tab").forEach((tab) => {
     tab.addEventListener("click", () => {
@@ -1260,7 +1219,6 @@ function bindEvents() {
   $("#logoutButton").addEventListener("click", logoutAdmin);
   $("#menuForm").addEventListener("submit", saveMenuItem);
   $("#cancelEdit").addEventListener("click", resetForm);
-  $("#resetMenu").addEventListener("click", resetMenuToDefault);
 
   $("#itemImage").addEventListener("change", async (event) => {
     const imageData = await imageFileToDataUrl(event.target.files[0]);
