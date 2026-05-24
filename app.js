@@ -277,6 +277,7 @@ const kitchenOrders = $("#kitchenOrders");
 const adminItems = $("#adminItems");
 const adminOrders = $("#adminOrders");
 const channel = "BroadcastChannel" in window ? new BroadcastChannel("restaurant-orders") : null;
+let menuCardObserver = null;
 
 function normalizeMenuItem(row) {
   return {
@@ -385,11 +386,22 @@ function renderMenu() {
   const visibleItems = state.category === "Todos" ? state.menuItems : state.menuItems.filter((item) => item.category === state.category);
   menuGrid.innerHTML = "";
 
-  visibleItems.forEach((item) => {
+  visibleItems.forEach((item, index) => {
     const card = template.content.firstElementChild.cloneNode(true);
-    card.querySelector("img").src = item.image;
-    card.querySelector("img").alt = item.name;
-    card.querySelector("img").addEventListener("error", (event) => {
+    card.style.setProperty("--reveal-delay", `${Math.min(index, 10) * 55}ms`);
+    const image = card.querySelector("img");
+    image.src = menuImageUrl(item.image, 1200, 1200);
+    image.srcset = [
+      `${menuImageUrl(item.image, 900, 900)} 900w`,
+      `${menuImageUrl(item.image, 1600, 1600)} 1600w`,
+      `${menuImageUrl(item.image, 2400, 2400)} 2400w`,
+      `${menuImageUrl(item.image, 3840, 2160)} 3840w`,
+    ].join(", ");
+    image.sizes = "(max-width: 700px) 92vw, (max-width: 1200px) 46vw, 30vw";
+    image.loading = index < 2 ? "eager" : "lazy";
+    image.decoding = "async";
+    image.alt = item.name;
+    image.addEventListener("error", (event) => {
       event.currentTarget.src = "./imagens/burger.jpg";
     }, { once: true });
     card.querySelector(".category-label").textContent = item.category;
@@ -399,6 +411,37 @@ function renderMenu() {
     card.querySelector(".add-button").addEventListener("click", (event) => addToCart(item.id, event.currentTarget));
     menuGrid.appendChild(card);
   });
+
+  requestAnimationFrame(revealMenuCards);
+}
+
+function menuImageUrl(src, width, height) {
+  if (!src) return "./imagens/burger.jpg";
+  if (!src.includes("loremflickr.com")) return src;
+  return src.replace(/loremflickr\.com\/\d+\/\d+\//, `loremflickr.com/${width}/${height}/`);
+}
+
+function revealMenuCards() {
+  const cards = $$(".menu-card");
+
+  if (!("IntersectionObserver" in window)) {
+    cards.forEach((card) => card.classList.add("is-visible"));
+    return;
+  }
+
+  menuCardObserver?.disconnect();
+  menuCardObserver = new IntersectionObserver(
+    (entries) => {
+      entries.forEach((entry) => {
+        if (!entry.isIntersecting) return;
+        entry.target.classList.add("is-visible");
+        menuCardObserver.unobserve(entry.target);
+      });
+    },
+    { rootMargin: "0px 0px -8% 0px", threshold: 0.14 }
+  );
+
+  cards.forEach((card) => menuCardObserver.observe(card));
 }
 
 function showToast(message) {
@@ -442,8 +485,41 @@ function addToCart(itemId, button) {
   }
   renderCart();
   confirmAddButton(button);
+  animateAddToCart(button);
   const item = state.menuItems.find((menuItem) => menuItem.id === itemId);
   showToast(`${item.name} foi adicionado ao carrinho.`);
+}
+
+function animateAddToCart(button) {
+  if (!button || !window.matchMedia("(prefers-reduced-motion: no-preference)").matches) return;
+
+  const card = button.closest(".menu-card");
+  const image = card?.querySelector("img");
+  const cart = $(".cart-panel");
+  if (!image || !cart) return;
+
+  const imageRect = image.getBoundingClientRect();
+  const cartRect = cart.getBoundingClientRect();
+  const clone = image.cloneNode();
+  clone.removeAttribute("srcset");
+  clone.className = "cart-fly-image";
+  clone.style.left = `${imageRect.left}px`;
+  clone.style.top = `${imageRect.top}px`;
+  clone.style.width = `${imageRect.width}px`;
+  clone.style.height = `${imageRect.height}px`;
+  document.body.appendChild(clone);
+
+  const x = cartRect.left + cartRect.width * 0.5 - (imageRect.left + imageRect.width * 0.5);
+  const y = cartRect.top + 54 - (imageRect.top + imageRect.height * 0.5);
+
+  clone.animate(
+    [
+      { transform: "translate3d(0, 0, 0) scale(1)", opacity: 0.86 },
+      { transform: `translate3d(${x * 0.58}px, ${y * 0.42}px, 0) scale(0.36)`, opacity: 0.72 },
+      { transform: `translate3d(${x}px, ${y}px, 0) scale(0.08)`, opacity: 0 },
+    ],
+    { duration: 620, easing: "cubic-bezier(.2,.8,.2,1)" }
+  ).finished.finally(() => clone.remove());
 }
 
 function changeQuantity(itemId, amount) {
@@ -473,7 +549,7 @@ function renderCart() {
       (item) => `
         <div class="cart-line">
           <div class="cart-line-top">
-            <img class="cart-thumb" src="${item.image}" alt="${item.name}" />
+            <img class="cart-thumb" src="${menuImageUrl(item.image, 480, 480)}" alt="${item.name}" loading="lazy" decoding="async" />
             <div class="cart-line-info">
               <strong>${item.name}</strong>
               <span>${currency.format(item.price * item.quantity)}</span>

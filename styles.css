@@ -1496,3 +1496,226 @@ main {
     min-height: 300px;
   }
 }
+
+/* Fluid motion pass: compositor-friendly movement and responsive high-res media. */
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  text-rendering: optimizeLegibility;
+}
+
+.hero {
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
+  transform: translateZ(0);
+}
+
+.hero::before {
+  z-index: 0;
+  will-change: transform, opacity;
+  animation: heroBreath 18s cubic-bezier(0.22, 1, 0.36, 1) infinite alternate;
+  transform-origin: center;
+}
+
+.hero-content {
+  position: relative;
+  z-index: 1;
+  will-change: transform, opacity;
+}
+
+#clienteView .panel,
+#clienteView .menu-card,
+#clienteView .cart-line,
+#clienteView .add-button,
+#clienteView .primary-button,
+#clienteView .category-filters button,
+#clienteView .qty-controls button {
+  transform: translateZ(0);
+}
+
+#clienteView .panel {
+  transition: transform 0.28s ease, border-color 0.28s ease, background-color 0.28s ease;
+}
+
+#clienteView .menu-grid {
+  align-items: stretch;
+}
+
+#clienteView .menu-card {
+  contain: layout paint;
+  content-visibility: auto;
+  contain-intrinsic-size: 620px;
+  opacity: 0;
+  transform: translate3d(0, 26px, 0) scale(0.985);
+  transition:
+    opacity 0.42s ease var(--reveal-delay, 0ms),
+    transform 0.52s cubic-bezier(0.22, 1, 0.36, 1) var(--reveal-delay, 0ms),
+    border-color 0.22s ease,
+    background-color 0.22s ease;
+  animation: cardRevealSmooth 0.58s cubic-bezier(0.22, 1, 0.36, 1) var(--reveal-delay, 0ms) both;
+  will-change: transform, opacity;
+}
+
+#clienteView .menu-card.is-visible {
+  opacity: 1;
+  transform: translate3d(0, 0, 0) scale(1);
+}
+
+#clienteView .menu-card.is-visible:hover {
+  transform: translate3d(0, -9px, 0) scale(1.012);
+}
+
+#clienteView .menu-card img {
+  backface-visibility: hidden;
+  filter: none;
+  transform: translate3d(0, 0, 0) scale(1.001);
+  transition: transform 0.72s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.25s ease;
+  will-change: transform;
+}
+
+#clienteView .menu-card:hover img {
+  filter: none;
+  transform: translate3d(0, 0, 0) scale(1.075);
+}
+
+#clienteView .add-button,
+#clienteView .primary-button,
+#clienteView .category-filters button,
+#clienteView .qty-controls button,
+#clienteView .icon-button {
+  transition:
+    transform 0.22s cubic-bezier(0.22, 1, 0.36, 1),
+    background-color 0.22s ease,
+    color 0.22s ease,
+    border-color 0.22s ease,
+    box-shadow 0.22s ease;
+}
+
+#clienteView .add-button:active,
+#clienteView .primary-button:active,
+#clienteView .category-filters button:active,
+#clienteView .qty-controls button:active,
+#clienteView .icon-button:active {
+  transform: translate3d(0, 1px, 0) scale(0.98);
+}
+
+#clienteView .add-button.added {
+  animation: addedPulse 0.72s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+#clienteView .cart-panel {
+  transition: transform 0.36s cubic-bezier(0.22, 1, 0.36, 1), border-color 0.24s ease;
+}
+
+#clienteView .cart-line {
+  animation: cartLineIn 0.32s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.cart-fly-image {
+  position: fixed;
+  z-index: 1000;
+  object-fit: cover;
+  border: 1px solid rgba(248, 217, 149, 0.54);
+  border-radius: 18px;
+  pointer-events: none;
+  transform-origin: center;
+  box-shadow: 0 24px 70px rgba(0, 0, 0, 0.42);
+  will-change: transform, opacity;
+}
+
+@keyframes heroBreath {
+  from {
+    opacity: 0.78;
+    transform: scale3d(1, 1, 1);
+  }
+
+  to {
+    opacity: 1;
+    transform: scale3d(1.055, 1.055, 1);
+  }
+}
+
+@keyframes addedPulse {
+  0% {
+    transform: translateZ(0) scale(1);
+  }
+
+  45% {
+    transform: translateZ(0) scale(1.035);
+  }
+
+  100% {
+    transform: translateZ(0) scale(1);
+  }
+}
+
+@keyframes cartLineIn {
+  from {
+    opacity: 0;
+    transform: translate3d(0, 10px, 0);
+  }
+
+  to {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+  }
+}
+
+@keyframes cardRevealSmooth {
+  from {
+    opacity: 0;
+    transform: translate3d(0, 26px, 0) scale(0.985);
+  }
+
+  to {
+    opacity: 1;
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+}
+
+@media (max-width: 900px) {
+  .hero::before {
+    animation-duration: 24s;
+  }
+
+  #clienteView .panel {
+    backdrop-filter: none;
+    box-shadow: 0 18px 42px rgba(0, 0, 0, 0.26);
+  }
+
+  #clienteView .menu-card {
+    contain-intrinsic-size: 560px;
+    box-shadow: 0 18px 48px rgba(0, 0, 0, 0.28);
+  }
+
+  #clienteView .menu-card.is-visible:hover {
+    transform: translate3d(0, -4px, 0) scale(1.004);
+  }
+
+  #clienteView .menu-card:hover img {
+    transform: translate3d(0, 0, 0) scale(1.035);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    scroll-behavior: auto !important;
+    transition-duration: 0.001ms !important;
+  }
+
+  #clienteView .menu-card {
+    opacity: 1;
+    transform: none;
+  }
+}
