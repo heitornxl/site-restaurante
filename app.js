@@ -247,7 +247,12 @@ const state = {
   orders: JSON.parse(localStorage.getItem("restaurant-orders") || "[]"),
   menuItems: JSON.parse(localStorage.getItem("restaurant-menu") || "null") || [],
   isAdminLoggedIn: sessionStorage.getItem("restaurant-admin") === "true",
+  trackedOrderIds: JSON.parse(localStorage.getItem("restaurant-tracked-orders") || "[]"),
+  clientToken: localStorage.getItem("restaurant-client-token") || crypto.randomUUID(),
+  knownOrderStatuses: {},
 };
+
+localStorage.setItem("restaurant-client-token", state.clientToken);
 
 const supabaseConfig = window.SUPABASE_CONFIG || {};
 const database = {
@@ -278,6 +283,34 @@ const adminItems = $("#adminItems");
 const adminOrders = $("#adminOrders");
 const channel = "BroadcastChannel" in window ? new BroadcastChannel("restaurant-orders") : null;
 let menuCardObserver = null;
+
+function rememberCustomerOrder(orderId) {
+  if (state.trackedOrderIds.includes(orderId)) return;
+  state.trackedOrderIds = [orderId, ...state.trackedOrderIds].slice(0, 20);
+  localStorage.setItem("restaurant-tracked-orders", JSON.stringify(state.trackedOrderIds));
+}
+
+function isCustomerOrder(order) {
+  return state.trackedOrderIds.includes(order.id);
+}
+
+function getCustomerOrders() {
+  return state.orders
+    .filter(isCustomerOrder)
+    .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+}
+
+function snapshotCustomerStatuses() {
+  return Object.fromEntries(getCustomerOrders().map((order) => [order.id, order.status]));
+}
+
+function notifyCustomerStatusChanges(previousStatuses) {
+  const changedOrders = getCustomerOrders().filter((order) => previousStatuses[order.id] && previousStatuses[order.id] !== order.status);
+  changedOrders.forEach((order) => {
+    showToast(`Seu pedido agora esta: ${order.status}.`, "orders");
+  });
+  state.knownOrderStatuses = snapshotCustomerStatuses();
+}
 
 function normalizeMenuItem(row) {
   return {
@@ -334,11 +367,26 @@ async function loadMenuFromDatabase() {
 
 async function loadOrdersFromDatabase() {
   if (!database.enabled) return;
-  const { data, error } = await database.client
-    .from("orders")
-    .select("*, order_items(*)")
-    .neq("status", "Finalizado")
-    .order("created_at", { ascending: true });
+
+  if (!state.isAdminLoggedIn && !state.trackedOrderIds.length) {
+    state.orders = [];
+    return;
+  }
+
+  let query = database.client.from("orders").select("*, order_items(*)").order("created_at", { ascending: true });
+  if (!state.isAdminLoggedIn) query = query.in("id", state.trackedOrderIds);
+
+  let { data, error } = await query;
+
+  if (error && !state.isAdminLoggedIn) {
+    const rpcResult = await database.client.rpc("get_customer_orders", { requested_order_ids: state.trackedOrderIds });
+    data = Array.isArray(rpcResult.data)
+      ? rpcResult.data
+      : typeof rpcResult.data === "string"
+        ? JSON.parse(rpcResult.data)
+        : [];
+    error = rpcResult.error;
+  }
 
   if (error) {
     console.error(error);
@@ -444,11 +492,14 @@ function revealMenuCards() {
   cards.forEach((card) => menuCardObserver.observe(card));
 }
 
-function showToast(message) {
+function showToast(message, action = "cart") {
   const toast = $("#toast");
+  const actionButton = action === "orders"
+    ? `<button type="button" data-scroll-orders>Ver pedidos</button>`
+    : `<button type="button" data-scroll-cart>Ver carrinho</button>`;
   toast.innerHTML = `
     <span>${message}</span>
-    <button type="button" data-scroll-cart>Ver carrinho</button>
+    ${actionButton}
   `;
   toast.classList.add("visible");
   clearTimeout(showToast.timeoutId);
@@ -626,7 +677,7 @@ async function sendOrder() {
   };
 
   if (database.enabled) {
-    const { error: orderError } = await database.client.from("orders").insert({
+    const orderPayload = {
       id: order.id,
       type: order.type,
       status: order.status,
@@ -637,7 +688,15 @@ async function sendOrder() {
       note: order.note,
       total: order.total,
       created_at: order.createdAt,
-    });
+      client_token: state.clientToken,
+    };
+
+    let { error: orderError } = await database.client.from("orders").insert(orderPayload);
+    if (orderError && String(orderError.message || "").toLowerCase().includes("client_token")) {
+      const { client_token, ...legacyOrderPayload } = orderPayload;
+      const retry = await database.client.from("orders").insert(legacyOrderPayload);
+      orderError = retry.error;
+    }
 
     if (orderError) {
       console.error(orderError);
@@ -665,35 +724,36 @@ async function sendOrder() {
     state.orders.push(order);
   }
 
+  rememberCustomerOrder(order.id);
   state.cart = [];
   $("#generalNote").value = "";
   await saveOrders();
   renderCart();
-  renderKitchen();
+  renderCustomerOrders();
   renderAdminOrders();
-  alert("Pedido enviado para a cozinha.");
+  showView("cozinha");
+  showToast("Pedido enviado. Voce pode acompanhar o status aqui.", "orders");
 }
 
-function renderKitchen() {
-  const activeOrders = state.orders.filter((order) => order.status !== "Finalizado");
-  if (!activeOrders.length) {
+function renderCustomerOrders() {
+  const customerOrders = getCustomerOrders();
+  if (!customerOrders.length) {
     kitchenOrders.className = "orders-grid empty-state";
-    kitchenOrders.textContent = "Nenhum pedido na fila.";
+    kitchenOrders.textContent = "Voce ainda nao enviou nenhum pedido neste aparelho.";
     return;
   }
 
   kitchenOrders.className = "orders-grid";
-  kitchenOrders.innerHTML = activeOrders
-    .map((order, index) => {
+  kitchenOrders.innerHTML = customerOrders
+    .map((order) => {
       const when = new Date(order.createdAt).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
       const destination =
         order.type === "mesa"
           ? `Mesa ${order.table}`
-          : `Tele-entrega - ${order.customer.name}`;
-      const positionText = index === 0 ? "E o proximo da fila" : `${index} pedido${index > 1 ? "s" : ""} antes deste`;
+          : `Tele-entrega - ${order.customer.name || "cliente"}`;
 
       return `
-        <article class="order-card">
+        <article class="order-card customer-order-card">
           <header>
             <div>
               <h3>${destination}</h3>
@@ -701,7 +761,12 @@ function renderKitchen() {
             </div>
             <span class="badge ${order.status === "Finalizado" ? "done" : ""}">${order.status}</span>
           </header>
-          <p class="queue-position">${positionText}</p>
+          <div class="status-steps" aria-label="Status do pedido">
+            <span class="${["Novo", "Em preparo", "Finalizado"].includes(order.status) ? "active" : ""}">Recebido</span>
+            <span class="${["Em preparo", "Finalizado"].includes(order.status) ? "active" : ""}">Em preparo</span>
+            <span class="${order.status === "Finalizado" ? "active" : ""}">Finalizado</span>
+          </div>
+          <p class="queue-position">${customerStatusMessage(order.status)}</p>
           <ol class="order-list">
             ${order.items
               .map(
@@ -722,6 +787,12 @@ function renderKitchen() {
       `;
     })
     .join("");
+}
+
+function customerStatusMessage(status) {
+  if (status === "Novo") return "Seu pedido foi recebido e aguarda confirmacao da cozinha.";
+  if (status === "Em preparo") return "A cozinha ja esta preparando seu pedido.";
+  return "Pedido finalizado. Bom apetite!";
 }
 
 function renderAdminOrders() {
@@ -778,6 +849,7 @@ function renderAdminOrders() {
 async function updateOrderStatus(orderId) {
   const order = state.orders.find((item) => item.id === orderId);
   if (!order) return;
+  const previousStatuses = snapshotCustomerStatuses();
   order.status = order.status === "Novo" ? "Em preparo" : "Finalizado";
   if (database.enabled) {
     const { error } = await database.client.from("orders").update({ status: order.status }).eq("id", orderId);
@@ -789,8 +861,9 @@ async function updateOrderStatus(orderId) {
   }
 
   await saveOrders();
-  renderKitchen();
+  renderCustomerOrders();
   renderAdminOrders();
+  notifyCustomerStatusChanges(previousStatuses);
 }
 
 function toggleDeliveryFields() {
@@ -807,6 +880,7 @@ function showView(viewName) {
   $("#clienteView").classList.toggle("active-view", viewName === "cliente");
   $("#cozinhaView").classList.toggle("active-view", viewName === "cozinha");
   $("#adminView").classList.toggle("active-view", viewName === "admin");
+  if (viewName === "cozinha") renderCustomerOrders();
   if (viewName === "admin") renderAdmin();
 }
 
@@ -852,6 +926,7 @@ async function loginAdmin() {
 
     state.isAdminLoggedIn = true;
     $("#loginMessage").textContent = "";
+    await loadOrdersFromDatabase();
     renderAdmin();
     return;
   }
@@ -874,6 +949,8 @@ async function logoutAdmin() {
 
   state.isAdminLoggedIn = false;
   sessionStorage.removeItem("restaurant-admin");
+  await loadOrdersFromDatabase();
+  renderCustomerOrders();
   resetForm();
   renderAdmin();
 }
@@ -1062,6 +1139,13 @@ function bindEvents() {
   });
 
   $("#toast").addEventListener("click", (event) => {
+    if (event.target.closest("[data-scroll-orders]")) {
+      $("#toast").classList.remove("visible");
+      showView("cozinha");
+      $("#cozinhaView").scrollIntoView({ behavior: "smooth", block: "start" });
+      return;
+    }
+
     if (!event.target.closest("[data-scroll-cart]")) return;
     $("#toast").classList.remove("visible");
     scrollToCart();
@@ -1085,7 +1169,7 @@ function bindEvents() {
 
     state.orders = state.orders.filter((order) => order.status !== "Finalizado");
     await saveOrders();
-    renderKitchen();
+    renderCustomerOrders();
     renderAdminOrders();
   });
 
@@ -1124,9 +1208,11 @@ function bindEvents() {
 
   channel?.addEventListener("message", (event) => {
     if (event.data?.type !== "orders-updated") return;
+    const previousStatuses = snapshotCustomerStatuses();
     state.orders = event.data.orders;
-    renderKitchen();
+    renderCustomerOrders();
     renderAdminOrders();
+    notifyCustomerStatusChanges(previousStatuses);
   });
 }
 
@@ -1146,21 +1232,39 @@ function subscribeToDatabaseChanges() {
   database.client
     .channel("restaurant-order-changes")
     .on("postgres_changes", { event: "*", schema: "public", table: "orders" }, async () => {
+      const previousStatuses = snapshotCustomerStatuses();
       await loadOrdersFromDatabase();
-      renderKitchen();
+      renderCustomerOrders();
       renderAdminOrders();
+      notifyCustomerStatusChanges(previousStatuses);
     })
     .on("postgres_changes", { event: "*", schema: "public", table: "order_items" }, async () => {
       await loadOrdersFromDatabase();
-      renderKitchen();
+      renderCustomerOrders();
       renderAdminOrders();
     })
     .subscribe();
 
   database.client.auth.onAuthStateChange((_event, session) => {
     state.isAdminLoggedIn = Boolean(session);
+    loadOrdersFromDatabase().then(() => {
+      renderCustomerOrders();
+      renderAdminOrders();
+    });
     renderAdmin();
   });
+}
+
+function startOrderPolling() {
+  if (!database.enabled) return;
+
+  setInterval(async () => {
+    const previousStatuses = snapshotCustomerStatuses();
+    await loadOrdersFromDatabase();
+    renderCustomerOrders();
+    renderAdminOrders();
+    notifyCustomerStatusChanges(previousStatuses);
+  }, 10000);
 }
 
 async function initApp() {
@@ -1171,12 +1275,13 @@ async function initApp() {
     await loadMenuFromDatabase();
     await loadOrdersFromDatabase();
     subscribeToDatabaseChanges();
+    startOrderPolling();
   }
 
   renderCategories();
   renderMenu();
   renderCart();
-  renderKitchen();
+  renderCustomerOrders();
   renderAdminOrders();
   toggleDeliveryFields();
   renderAdmin();

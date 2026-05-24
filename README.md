@@ -37,4 +37,4 @@ Esta versao salva dados no navegador usando `localStorage`. Para uso real em res
    - anon public key
 6. Cole esses valores no arquivo `supabase-config.js`.
 
-Quando `supabase-config.js` estiver preenchido, o site passa a usar o banco online para cardapio, pedidos e fila.
+Quando `supabase-config.js` estiver preenchido, o site passa a usar o banco online para cardapio e pedidos. A aba Pedidos mostra apenas os pedidos criados naquele navegador, enquanto o Admin continua vendo todos para atualizar o status.

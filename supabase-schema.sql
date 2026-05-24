@@ -24,6 +24,12 @@ create table if not exists public.orders (
   created_at timestamptz not null default now()
 );
 
+alter table public.orders
+  add column if not exists client_token text;
+
+create index if not exists orders_client_token_idx
+  on public.orders (client_token);
+
 create table if not exists public.order_items (
   id bigserial primary key,
   order_id uuid not null references public.orders(id) on delete cascade,
@@ -41,10 +47,12 @@ alter table public.order_items enable row level security;
 drop policy if exists "Todos podem ver itens ativos" on public.menu_items;
 drop policy if exists "Admins autenticados gerenciam cardapio" on public.menu_items;
 drop policy if exists "Todos podem ver pedidos" on public.orders;
+drop policy if exists "Admins autenticados veem pedidos" on public.orders;
 drop policy if exists "Clientes podem criar pedidos" on public.orders;
 drop policy if exists "Admins autenticados atualizam pedidos" on public.orders;
 drop policy if exists "Admins autenticados removem pedidos" on public.orders;
 drop policy if exists "Todos podem ver itens dos pedidos" on public.order_items;
+drop policy if exists "Admins autenticados veem itens dos pedidos" on public.order_items;
 drop policy if exists "Clientes podem criar itens dos pedidos" on public.order_items;
 drop policy if exists "Admins autenticados removem itens dos pedidos" on public.order_items;
 
@@ -58,8 +66,9 @@ create policy "Admins autenticados gerenciam cardapio"
   using (true)
   with check (true);
 
-create policy "Todos podem ver pedidos"
+create policy "Admins autenticados veem pedidos"
   on public.orders for select
+  to authenticated
   using (true);
 
 create policy "Clientes podem criar pedidos"
@@ -78,8 +87,9 @@ create policy "Admins autenticados removem pedidos"
   to authenticated
   using (true);
 
-create policy "Todos podem ver itens dos pedidos"
+create policy "Admins autenticados veem itens dos pedidos"
   on public.order_items for select
+  to authenticated
   using (true);
 
 create policy "Clientes podem criar itens dos pedidos"
@@ -91,6 +101,35 @@ create policy "Admins autenticados removem itens dos pedidos"
   on public.order_items for delete
   to authenticated
   using (true);
+
+create or replace function public.get_customer_orders(requested_order_ids uuid[])
+returns jsonb
+language sql
+security definer
+set search_path = public
+as $$
+  select coalesce(
+    jsonb_agg(
+      to_jsonb(o) || jsonb_build_object(
+        'order_items',
+        coalesce(
+          (
+            select jsonb_agg(to_jsonb(oi) order by oi.id)
+            from public.order_items oi
+            where oi.order_id = o.id
+          ),
+          '[]'::jsonb
+        )
+      )
+      order by o.created_at
+    ),
+    '[]'::jsonb
+  )
+  from public.orders o
+  where o.id = any(requested_order_ids);
+$$;
+
+grant execute on function public.get_customer_orders(uuid[]) to anon, authenticated;
 
 insert into public.menu_items (id, name, category, description, price, image, sort_order)
 values
