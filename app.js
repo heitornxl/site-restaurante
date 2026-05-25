@@ -761,6 +761,41 @@ function buildItemNote(item) {
   return [...buildCustomizationSummary(item), item.note ? `Obs: ${item.note}` : ""].filter(Boolean).join(" | ");
 }
 
+function reorderFinishedOrder(orderId) {
+  const order = state.orders.find((item) => item.id === orderId);
+  if (!order || order.status !== "Finalizado") return;
+
+  if (state.cart.length) {
+    const replaceCart = confirm("Seu carrinho atual sera substituido por este pedido. Deseja continuar?");
+    if (!replaceCart) return;
+  }
+
+  state.cart = order.items.map((orderItem) => {
+    const currentMenuItem = state.menuItems.find((menuItem) => menuItem.id === orderItem.id);
+
+    return {
+      ...(currentMenuItem || {}),
+      id: orderItem.id,
+      cartId: crypto.randomUUID(),
+      name: orderItem.name,
+      category: currentMenuItem?.category || "Historico",
+      description: currentMenuItem?.description || "Item repetido a partir do historico do cliente.",
+      image: currentMenuItem?.image || "./imagens/burger.jpg",
+      quantity: orderItem.quantity,
+      note: orderItem.note || "",
+      price: Number(orderItem.price || currentMenuItem?.price || 0),
+      removedIngredients: [],
+      addons: [],
+      extraRequest: "",
+    };
+  });
+
+  renderCart();
+  showView("cliente");
+  scrollToCart();
+  showToast("Pedido antigo carregado no carrinho.");
+}
+
 function renderCart() {
   if (!state.cart.length) {
     cartItems.className = "cart-items empty-state";
@@ -1003,6 +1038,11 @@ function renderCustomerOrderCard(order) {
         ${order.note ? `<span><strong>Observacao geral:</strong> ${escapeHtml(order.note)}</span>` : ""}
         <span><strong>Total:</strong> ${currency.format(order.total)}</span>
       </div>
+      ${
+        order.status === "Finalizado"
+          ? `<button class="repeat-order-button" type="button" data-repeat-order="${order.id}">Pedir novamente</button>`
+          : ""
+      }
     </article>
   `;
 }
@@ -1364,6 +1404,12 @@ function bindEvents() {
     if (!event.target.closest("[data-scroll-cart]")) return;
     $("#toast").classList.remove("visible");
     scrollToCart();
+  });
+
+  kitchenOrders.addEventListener("click", (event) => {
+    const button = event.target.closest("[data-repeat-order]");
+    if (!button) return;
+    reorderFinishedOrder(button.dataset.repeatOrder);
   });
 
   $$("input[name='orderType']").forEach((input) => input.addEventListener("change", toggleDeliveryFields));
