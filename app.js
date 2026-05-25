@@ -929,48 +929,82 @@ function renderCustomerOrders() {
     return;
   }
 
-  kitchenOrders.className = "orders-grid";
-  kitchenOrders.innerHTML = customerOrders
-    .map((order) => {
-      const when = new Date(order.createdAt).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
-      const destination =
-        order.type === "mesa"
-          ? `Mesa ${order.table}`
-          : `Delivery - ${order.customer.name || "cliente"}`;
+  const activeOrders = customerOrders.filter((order) => order.status !== "Finalizado");
+  const finishedOrders = customerOrders.filter((order) => order.status === "Finalizado");
 
-      return `
-        <article class="order-card customer-order-card">
-          <header>
-            <div>
-              <h3>${destination}</h3>
-              <p class="order-time">${when}</p>
-            </div>
-            <span class="badge ${order.status === "Finalizado" ? "done" : ""}">${order.status}</span>
-          </header>
-          <div class="status-steps" aria-label="Status do pedido">
-            ${renderStatusSteps(order)}
-          </div>
-          <p class="queue-position">${customerStatusMessage(order.status)}</p>
-          <ol class="order-list">
-            ${order.items
-              .map(
-                (item) => `
-                  <li>
-                    <strong>${item.quantity}x ${escapeHtml(item.name)}</strong>
-                    ${item.note ? `<br><span>${escapeHtml(item.note)}</span>` : ""}
-                  </li>
-                `
-              )
-              .join("")}
-          </ol>
-          <div class="order-meta">
-            ${order.note ? `<span><strong>Observacao geral:</strong> ${escapeHtml(order.note)}</span>` : ""}
-            <span><strong>Total:</strong> ${currency.format(order.total)}</span>
-          </div>
-        </article>
-      `;
-    })
-    .join("");
+  kitchenOrders.className = "customer-orders-stack";
+  kitchenOrders.innerHTML = `
+    <section class="customer-order-section">
+      <div class="customer-order-section-title">
+        <div>
+          <p class="eyebrow">Agora</p>
+          <h3>Em andamento</h3>
+        </div>
+        <span>${activeOrders.length}</span>
+      </div>
+      ${
+        activeOrders.length
+          ? `<div class="orders-grid">${activeOrders.map(renderCustomerOrderCard).join("")}</div>`
+          : `<div class="empty-state customer-history-empty">Nenhum pedido em preparo agora.</div>`
+      }
+    </section>
+
+    <section class="customer-order-section">
+      <div class="customer-order-section-title">
+        <div>
+          <p class="eyebrow">Historico deste aparelho</p>
+          <h3>Pedidos concluidos</h3>
+        </div>
+        <span>${finishedOrders.length}</span>
+      </div>
+      ${
+        finishedOrders.length
+          ? `<div class="orders-grid history-grid">${finishedOrders.map(renderCustomerOrderCard).join("")}</div>`
+          : `<div class="empty-state customer-history-empty">Quando um pedido for finalizado, ele aparece aqui.</div>`
+      }
+    </section>
+  `;
+}
+
+function renderCustomerOrderCard(order) {
+  const when = new Date(order.createdAt).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
+  const date = new Date(order.createdAt).toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" });
+  const destination =
+    order.type === "mesa"
+      ? `Mesa ${order.table}`
+      : `Delivery - ${order.customer.name || "cliente"}`;
+
+  return `
+    <article class="order-card customer-order-card ${order.status === "Finalizado" ? "is-finished" : ""}">
+      <header>
+        <div>
+          <h3>${escapeHtml(destination)}</h3>
+          <p class="order-time">${date} as ${when}</p>
+        </div>
+        <span class="badge ${order.status === "Finalizado" ? "done" : ""}">${order.status}</span>
+      </header>
+      <div class="status-steps" aria-label="Status do pedido">
+        ${renderStatusSteps(order)}
+      </div>
+      <p class="queue-position">${customerStatusMessage(order.status)}</p>
+      <ol class="order-list">
+        ${order.items
+          .map(
+            (item) => `
+              <li>
+                <strong>${item.quantity}x ${escapeHtml(item.name)}</strong>
+                ${item.note ? `<br><span>${escapeHtml(item.note)}</span>` : ""}
+              </li>
+            `
+          )
+          .join("")}
+      </ol>
+      <div class="order-meta">
+        ${order.note ? `<span><strong>Observacao geral:</strong> ${escapeHtml(order.note)}</span>` : ""}
+        <span><strong>Total:</strong> ${currency.format(order.total)}</span>
+      </div>
+    </article>
+  `;
 }
 
 function customerStatusMessage(status) {

@@ -1981,11 +1981,65 @@ body {
 }
 
 /* Customer-only order tracking view. */
+.customer-orders-stack {
+  display: grid;
+  gap: 28px;
+}
+
+.customer-order-section {
+  display: grid;
+  gap: 16px;
+}
+
+.customer-order-section-title {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: 16px;
+  border-bottom: 1px solid rgba(231, 196, 125, 0.18);
+  padding-bottom: 14px;
+}
+
+.customer-order-section-title h3 {
+  margin: 0;
+  color: #f8ead0;
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: clamp(1.5rem, 4vw, 2.25rem);
+  font-weight: 400;
+}
+
+.customer-order-section-title span {
+  display: inline-grid;
+  min-width: 38px;
+  height: 38px;
+  place-items: center;
+  border: 1px solid rgba(231, 196, 125, 0.28);
+  border-radius: 999px;
+  color: #f8d995;
+  font-weight: 900;
+}
+
+.customer-history-empty {
+  border: 1px solid rgba(231, 196, 125, 0.16);
+  background: rgba(255, 244, 221, 0.05);
+  padding: 18px;
+}
+
+.history-grid .customer-order-card {
+  opacity: 0.86;
+}
+
 .customer-order-card {
   border-color: rgba(231, 196, 125, 0.22);
   background:
     linear-gradient(180deg, rgba(26, 20, 15, 0.96), rgba(12, 9, 7, 0.98));
   color: #f8ead0;
+}
+
+.customer-order-card.is-finished {
+  border-color: rgba(117, 153, 104, 0.28);
+  background:
+    linear-gradient(180deg, rgba(18, 24, 17, 0.92), rgba(12, 12, 9, 0.98));
 }
 
 .customer-order-card .order-time,
@@ -1996,7 +2050,7 @@ body {
 
 .status-steps {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(112px, 1fr));
   gap: 8px;
   margin: 14px 0;
 }
