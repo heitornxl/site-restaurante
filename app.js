@@ -1373,6 +1373,23 @@ function bindEvents() {
   });
   $("#sendOrder").addEventListener("click", sendOrder);
   $("#clearOrders").addEventListener("click", async () => {
+    const finishedCount = state.orders.filter((order) => order.status === "Finalizado").length;
+    if (!finishedCount) {
+      alert("Nao ha pedidos finalizados para apagar.");
+      return;
+    }
+
+    const confirmed = confirm(
+      `Atencao: isso vai apagar ${finishedCount} pedido${finishedCount > 1 ? "s" : ""} finalizado${finishedCount > 1 ? "s" : ""} do historico dos clientes. Deseja continuar?`
+    );
+    if (!confirmed) return;
+
+    const typedConfirmation = prompt("Para confirmar, digite APAGAR.");
+    if (typedConfirmation !== "APAGAR") {
+      alert("Acao cancelada. Nada foi apagado.");
+      return;
+    }
+
     if (database.enabled) {
       const { error } = await database.client.from("orders").delete().eq("status", "Finalizado");
       if (error) {
@@ -1386,6 +1403,7 @@ function bindEvents() {
     await saveOrders();
     renderCustomerOrders();
     renderAdminOrders();
+    alert("Pedidos finalizados apagados com sucesso.");
   });
 
   adminOrders.addEventListener("click", async (event) => {

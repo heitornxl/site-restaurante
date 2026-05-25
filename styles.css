@@ -812,6 +812,29 @@ body.modal-open {
   margin: 20px 0 0;
 }
 
+.admin-danger-zone {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  margin-top: 18px;
+  padding: 16px;
+  border: 1px solid rgba(174, 55, 36, 0.22);
+  background: rgba(174, 55, 36, 0.07);
+}
+
+.admin-danger-zone strong {
+  display: block;
+  color: #7a261c;
+}
+
+.admin-danger-zone p {
+  max-width: 680px;
+  margin: 4px 0 0;
+  color: #6f5b47;
+  line-height: 1.45;
+}
+
 .toast {
   position: fixed;
   right: 18px;
@@ -2175,6 +2198,18 @@ body {
   color: #9e2f20;
 }
 
+.admin-view .admin-danger-zone .danger-button {
+  flex: 0 0 auto;
+  background: #fff8f4;
+  font-size: 0.9rem;
+}
+
+.admin-view .admin-danger-zone .danger-button:hover {
+  border-color: rgba(174, 55, 36, 0.62);
+  background: #f7d8cf;
+  color: #7a261c;
+}
+
 .admin-view .admin-item {
   border-color: rgba(91, 62, 32, 0.16);
   background: rgba(255, 255, 255, 0.72);
@@ -2305,5 +2340,14 @@ body {
   .customization-actions .secondary-button {
     width: 100%;
     min-width: 0;
+  }
+
+  .admin-danger-zone {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .admin-view .admin-danger-zone .danger-button {
+    width: 100%;
   }
 }
