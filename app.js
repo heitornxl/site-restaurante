@@ -241,12 +241,20 @@ const defaultMenuItems = [
   },
 ];
 
+const supabaseConfig = window.SUPABASE_CONFIG || {};
+const database = {
+  enabled: Boolean(supabaseConfig.url && supabaseConfig.anonKey && window.supabase),
+  client: null,
+};
+
 const state = {
   category: "Todos",
   adminCategory: "Todos",
   cart: [],
   orders: JSON.parse(localStorage.getItem("restaurant-orders") || "[]"),
-  menuItems: JSON.parse(localStorage.getItem("restaurant-menu") || "null") || [],
+  menuItems: database.enabled ? [] : JSON.parse(localStorage.getItem("restaurant-menu") || "null") || [],
+  menuLoaded: !database.enabled,
+  menuLoadError: false,
   isAdminLoggedIn: sessionStorage.getItem("restaurant-admin") === "true",
   trackedOrderIds: JSON.parse(localStorage.getItem("restaurant-tracked-orders") || "[]"),
   clientToken: localStorage.getItem("restaurant-client-token") || crypto.randomUUID(),
@@ -275,17 +283,12 @@ const addonOptions = [
 
 localStorage.setItem("restaurant-client-token", state.clientToken);
 
-const supabaseConfig = window.SUPABASE_CONFIG || {};
-const database = {
-  enabled: Boolean(supabaseConfig.url && supabaseConfig.anonKey && window.supabase),
-  client: null,
-};
-
 if (database.enabled) {
   database.client = window.supabase.createClient(supabaseConfig.url, supabaseConfig.anonKey);
+  localStorage.removeItem("restaurant-menu");
 }
 
-if (!state.menuItems.length) {
+if (!database.enabled && !state.menuItems.length) {
   state.menuItems = [...defaultMenuItems];
 }
 
@@ -424,6 +427,7 @@ function normalizeOrder(row) {
 
 async function loadMenuFromDatabase() {
   if (!database.enabled) return;
+  state.menuLoadError = false;
   const { data, error } = await database.client
     .from("menu_items")
     .select("*")
@@ -433,11 +437,15 @@ async function loadMenuFromDatabase() {
 
   if (error) {
     console.error(error);
+    state.menuLoaded = true;
+    state.menuLoadError = true;
+    state.menuItems = [];
     showToast("Nao consegui carregar o cardapio online.");
     return;
   }
 
   state.menuItems = data.map(normalizeMenuItem);
+  state.menuLoaded = true;
 }
 
 async function loadOrdersFromDatabase() {
@@ -498,6 +506,11 @@ async function saveOrders() {
 }
 
 function renderCategories() {
+  if (database.enabled && !state.menuLoaded) {
+    $("#categoryFilters").innerHTML = "";
+    return;
+  }
+
   const categories = ["Todos", ...new Set(state.menuItems.map((item) => item.category))];
   $("#categoryFilters").innerHTML = categories
     .map((category) => `<button class="${category === state.category ? "active" : ""}" data-category="${category}">${category}</button>`)
@@ -516,6 +529,22 @@ function renderAdminCategoryFilters() {
 
 function renderMenu() {
   const template = $("#menuItemTemplate");
+
+  if (database.enabled && !state.menuLoaded) {
+    menuGrid.innerHTML = `<div class="empty-state menu-loading-state">Carregando cardapio...</div>`;
+    return;
+  }
+
+  if (state.menuLoadError) {
+    menuGrid.innerHTML = `<div class="empty-state menu-loading-state">Nao consegui carregar o cardapio online. Atualize a pagina em alguns segundos.</div>`;
+    return;
+  }
+
+  if (!state.menuItems.length) {
+    menuGrid.innerHTML = `<div class="empty-state menu-loading-state">Nenhum item ativo no cardapio.</div>`;
+    return;
+  }
+
   const visibleItems = state.category === "Todos" ? state.menuItems : state.menuItems.filter((item) => item.category === state.category);
   menuGrid.innerHTML = "";
 

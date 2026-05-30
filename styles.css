@@ -633,6 +633,18 @@ body.modal-open {
   color: var(--muted);
 }
 
+.menu-loading-state {
+  grid-column: 1 / -1;
+  min-height: 180px;
+  display: grid;
+  place-items: center;
+  border: 1px solid rgba(231, 196, 125, 0.18);
+  background: rgba(255, 244, 221, 0.05);
+  color: rgba(255, 238, 202, 0.72);
+  text-align: center;
+  font-weight: 800;
+}
+
 .kitchen-view,
 .admin-view {
   display: none;
