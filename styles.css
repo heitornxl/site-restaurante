@@ -2228,6 +2228,12 @@ body {
   color: #1a1009;
 }
 
+.admin-view .secondary-button:disabled {
+  cursor: wait;
+  opacity: 0.68;
+  transform: none;
+}
+
 .admin-view .danger-button {
   border-color: rgba(174, 55, 36, 0.34);
   background: rgba(174, 55, 36, 0.1);

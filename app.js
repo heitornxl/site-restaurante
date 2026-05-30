@@ -281,6 +281,13 @@ const addonOptions = [
   { name: "Ovo extra", price: 4 },
 ];
 
+const imageOptimization = {
+  maxWidth: 1400,
+  maxHeight: 1400,
+  quality: 0.84,
+  largeImageBytes: 450 * 1024,
+};
+
 localStorage.setItem("restaurant-client-token", state.clientToken);
 
 if (database.enabled) {
@@ -553,13 +560,18 @@ function renderMenu() {
     card.style.setProperty("--reveal-delay", `${Math.min(index, 10) * 55}ms`);
     const image = card.querySelector("img");
     image.src = menuImageUrl(item.image, 1200, 1200);
-    image.srcset = [
-      `${menuImageUrl(item.image, 900, 900)} 900w`,
-      `${menuImageUrl(item.image, 1600, 1600)} 1600w`,
-      `${menuImageUrl(item.image, 2400, 2400)} 2400w`,
-      `${menuImageUrl(item.image, 3840, 2160)} 3840w`,
-    ].join(", ");
-    image.sizes = "(max-width: 700px) 92vw, (max-width: 1200px) 46vw, 30vw";
+    if (item.image?.includes("loremflickr.com")) {
+      image.srcset = [
+        `${menuImageUrl(item.image, 900, 900)} 900w`,
+        `${menuImageUrl(item.image, 1600, 1600)} 1600w`,
+        `${menuImageUrl(item.image, 2400, 2400)} 2400w`,
+        `${menuImageUrl(item.image, 3840, 2160)} 3840w`,
+      ].join(", ");
+      image.sizes = "(max-width: 700px) 92vw, (max-width: 1200px) 46vw, 30vw";
+    } else {
+      image.removeAttribute("srcset");
+      image.removeAttribute("sizes");
+    }
     image.loading = index < 2 ? "eager" : "lazy";
     image.decoding = "async";
     image.alt = item.name;
@@ -1268,18 +1280,68 @@ function slugify(text) {
     .replace(/(^-|-$)/g, "");
 }
 
-function imageFileToDataUrl(file) {
-  return new Promise((resolve, reject) => {
-    if (!file) {
-      resolve("");
-      return;
-    }
+function getDataUrlByteSize(dataUrl = "") {
+  const base64 = dataUrl.split(",")[1] || "";
+  return Math.ceil((base64.length * 3) / 4);
+}
 
-    const reader = new FileReader();
-    reader.onload = () => resolve(reader.result);
-    reader.onerror = reject;
-    reader.readAsDataURL(file);
+function isCompressibleDataImage(src = "") {
+  return /^data:image\/(jpeg|jpg|png|webp);base64,/i.test(src);
+}
+
+function browserSupportsWebp() {
+  const canvas = document.createElement("canvas");
+  canvas.width = 1;
+  canvas.height = 1;
+  return canvas.toDataURL("image/webp").startsWith("data:image/webp");
+}
+
+function loadImageElement(src) {
+  return new Promise((resolve, reject) => {
+    const image = new Image();
+    image.onload = () => resolve(image);
+    image.onerror = reject;
+    image.src = src;
   });
+}
+
+async function compressImageSource(src, options = {}) {
+  if (!src) return "";
+
+  const image = await loadImageElement(src);
+  const maxWidth = options.maxWidth || imageOptimization.maxWidth;
+  const maxHeight = options.maxHeight || imageOptimization.maxHeight;
+  const quality = options.quality || imageOptimization.quality;
+  const ratio = Math.min(1, maxWidth / image.naturalWidth, maxHeight / image.naturalHeight);
+  const width = Math.max(1, Math.round(image.naturalWidth * ratio));
+  const height = Math.max(1, Math.round(image.naturalHeight * ratio));
+  const canvas = document.createElement("canvas");
+  canvas.width = width;
+  canvas.height = height;
+  const context = canvas.getContext("2d", { alpha: false });
+
+  context.fillStyle = "#ffffff";
+  context.fillRect(0, 0, width, height);
+  context.drawImage(image, 0, 0, width, height);
+
+  const type = browserSupportsWebp() ? "image/webp" : "image/jpeg";
+  const compressed = canvas.toDataURL(type, quality);
+
+  if (isCompressibleDataImage(src) && getDataUrlByteSize(compressed) >= getDataUrlByteSize(src)) {
+    return src;
+  }
+
+  return compressed;
+}
+
+async function imageFileToDataUrl(file) {
+  if (!file) return "";
+  const objectUrl = URL.createObjectURL(file);
+  try {
+    return await compressImageSource(objectUrl);
+  } finally {
+    URL.revokeObjectURL(objectUrl);
+  }
 }
 
 function fillForm(item) {
@@ -1299,6 +1361,66 @@ function resetForm() {
   $("#formTitle").textContent = "Novo item";
   $("#imagePreview").removeAttribute("src");
   $("#imagePreview").classList.remove("visible");
+}
+
+async function optimizeMenuImages() {
+  const button = $("#optimizeImages");
+  const candidates = state.menuItems.filter((item) => isCompressibleDataImage(item.image));
+
+  if (!candidates.length) {
+    alert("Nao encontrei fotos grandes para otimizar.");
+    return;
+  }
+
+  const confirmed = confirm(
+    `Vou otimizar ${candidates.length} foto${candidates.length > 1 ? "s" : ""} do cardapio para carregar mais rapido. A qualidade sera preservada em tamanho adequado para o site. Deseja continuar?`
+  );
+  if (!confirmed) return;
+
+  button.disabled = true;
+  button.textContent = "Otimizando...";
+
+  try {
+    const optimizedItems = [];
+
+    for (const item of candidates) {
+      const originalBytes = getDataUrlByteSize(item.image);
+      const optimizedImage = await compressImageSource(item.image);
+      const optimizedBytes = getDataUrlByteSize(optimizedImage);
+
+      if (optimizedBytes < originalBytes * 0.92 || originalBytes > imageOptimization.largeImageBytes) {
+        optimizedItems.push({ ...item, image: optimizedImage });
+      }
+    }
+
+    if (!optimizedItems.length) {
+      alert("As fotos ja estavam em um tamanho bom.");
+      return;
+    }
+
+    if (database.enabled) {
+      for (const item of optimizedItems) {
+        const { error } = await database.client
+          .from("menu_items")
+          .update({ image: item.image, updated_at: new Date().toISOString() })
+          .eq("id", item.id);
+
+        if (error) throw error;
+      }
+    }
+
+    state.menuItems = state.menuItems.map((item) => optimizedItems.find((optimized) => optimized.id === item.id) || item);
+    await saveMenu();
+    renderMenu();
+    renderAdmin();
+    alert(`${optimizedItems.length} foto${optimizedItems.length > 1 ? "s" : ""} otimizada${optimizedItems.length > 1 ? "s" : ""} com sucesso.`);
+  } catch (error) {
+    console.error(error);
+    alert("Nao consegui otimizar as fotos agora.");
+  } finally {
+    button.disabled = false;
+    button.textContent = "Otimizar fotos";
+  }
 }
 
 async function saveMenuItem(event) {
@@ -1491,6 +1613,7 @@ function bindEvents() {
   $("#logoutButton").addEventListener("click", logoutAdmin);
   $("#menuForm").addEventListener("submit", saveMenuItem);
   $("#cancelEdit").addEventListener("click", resetForm);
+  $("#optimizeImages").addEventListener("click", optimizeMenuImages);
 
   $("#itemImage").addEventListener("change", async (event) => {
     const imageData = await imageFileToDataUrl(event.target.files[0]);
